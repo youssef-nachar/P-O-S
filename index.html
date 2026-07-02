@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restaurant POS</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style1.css">
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
 </head>
@@ -109,29 +109,46 @@
 
     </main>
            <section id="adminTab" class="tab-content" style="display:none;">
-            <div class="admin-panel">
+    <div class="admin-panel">
 
-                <h2>➕ Add New Product</h2>
+        <div class="admin-header">
+            <h2>Product Management</h2>
+            <p>Add, edit and manage your restaurant products.</p>
+        </div>
 
-                <input type="text" id="pName" placeholder="Product Name">
-                <input type="number" id="pPrice" placeholder="Price">
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Product Name</label>
+                <input type="text" id="pName" placeholder="Enter product name">
+            </div>
 
+            <div class="input-group">
+                <label>Price</label>
+                <input type="number" id="pPrice" placeholder="$0.00">
+            </div>
+
+            <div class="input-group">
+                <label>Category</label>
                 <select id="pCategory">
                     <option>Burger</option>
                     <option>Pizza</option>
                     <option>Drinks</option>
                     <option>Desserts</option>
                 </select>
-
-                <button onclick="addProduct()">Add Product</button>
-
-                <hr>
-
-                <h3>📦 Product List</h3>
-                <div id="adminProducts"></div>
-
             </div>
-        </section>
+
+            <button class="add-btn" onclick="addProduct()">
+                + Add Product
+            </button>
+        </div>
+
+        <div class="product-section">
+            <h3>Product List</h3>
+            <div id="adminProducts"></div>
+        </div>
+
+    </div>
+</section>
     <div id="checkoutModal" class="modal">
 
         <div class="modal-content">
@@ -194,7 +211,7 @@
 
     </div>
 
-    <script src="script.js"></script>
+    <script src="script1.js"></script>
 
 </body>
 
