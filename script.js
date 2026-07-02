@@ -164,3 +164,90 @@ new Date().toLocaleTimeString();
 setInterval(updateClock,1000);
 
 updateClock();
+
+function openCheckout(){
+
+renderInvoice();
+
+document.getElementById("checkoutModal").style.display="flex";
+
+}
+
+function closeCheckout(){
+
+document.getElementById("checkoutModal").style.display="none";
+
+}
+
+function renderInvoice(){
+
+let html="";
+
+let subtotal=0;
+
+cart.forEach(item=>{
+
+subtotal+=item.price*item.qty;
+
+html+=`
+
+<p>
+
+${item.name}
+
+×
+
+${item.qty}
+
+=
+
+$${item.price*item.qty}
+
+</p>
+
+`;
+
+});
+
+let vat=subtotal*0.15;
+
+let total=subtotal+vat-discount;
+
+document.getElementById("invoiceItems").innerHTML += `
+<tr>
+    <td>Product Name</td>
+    <td>2</td>
+    <td>$10</td>
+    <td>$20</td>
+</tr>
+`;
+
+document.getElementById("invoiceSubtotal").innerHTML="$"+subtotal.toFixed(2);
+
+document.getElementById("invoiceVat").innerHTML="$"+vat.toFixed(2);
+
+document.getElementById("invoiceDiscount").innerHTML="$"+discount.toFixed(2);
+
+document.getElementById("invoiceTotal").innerHTML="$"+total.toFixed(2);
+
+}
+
+function printInvoice(){
+
+window.print();
+
+}
+
+function finishSale(){
+
+alert("Order Saved Successfully");
+
+cart=[];
+
+discount=0;
+
+renderCart();
+
+closeCheckout();
+
+}
