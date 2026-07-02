@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant POS</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+<header>
+
+    <div class="logo">
+        🍽 Restaurant POS
+    </div>
+
+    <input type="text" id="search" placeholder="Search Product...">
+
+    <div class="info">
+        <span>Cashier : Ahmed</span>
+        <span>Table : 5</span>
+        <span id="clock"></span>
+    </div>
+
+</header>
+
+<main>
+
+    <!-- Categories -->
+    <aside class="categories">
+
+        <h2>Categories</h2>
+<button onclick="filterCategory('All')">All</button>
+<button onclick="filterCategory('Burger')">Burger</button>
+<button onclick="filterCategory('Pizza')">Pizza</button>
+<button onclick="filterCategory('Drinks')">Drinks</button>
+<button onclick="filterCategory('Desserts')">Desserts</button>
+    </aside>
+
+    <!-- Products -->
+
+ <section class="products" id="products">
+
+<div class="card" data-category="Burger" data-name="Classic Burger">
+<div class="emoji">🍔</div>
+<h3>Classic Burger</h3>
+<p>$8</p>
+<button onclick="addToCart('Classic Burger',8)">Add</button>
+</div>
+
+<div class="card" data-category="Pizza" data-name="Margherita">
+<div class="emoji">🍕</div>
+<h3>Margherita</h3>
+<p>$12</p>
+<button onclick="addToCart('Margherita',12)">Add</button>
+</div>
+
+<div class="card" data-category="Drinks" data-name="Cola">
+<div class="emoji">🥤</div>
+<h3>Cola</h3>
+<p>$2</p>
+<button onclick="addToCart('Cola',2)">Add</button>
+</div>
+
+<div class="card" data-category="Desserts" data-name="Cake">
+<div class="emoji">🍰</div>
+<h3>Cake</h3>
+<p>$5</p>
+<button onclick="addToCart('Cake',5)">Add</button>
+</div>
+
+</section>
+    <!-- Cart -->
+
+    <aside class="cart">
+
+        <h2>Cart</h2>
+
+        <ul id="cartItems"></ul>
+
+        <h3 id="total">Total : $0</h3>
+
+        <button class="checkout">
+            Checkout
+        </button>
+<div class="summary">
+
+<p>Subtotal <span id="subtotal">$0</span></p>
+
+<p>VAT (15%) <span id="vat">$0</span></p>
+
+<p>Discount <span id="discount">$0</span></p>
+
+<h2>Total <span id="total">$0</span></h2>
+
+<button onclick="applyDiscount()">Discount</button>
+
+<button class="checkout">Checkout</button>
+
+</div>
+    </aside>
+
+</main>
+
+<script src="script.js"></script>
+
+</body>
+</html>
