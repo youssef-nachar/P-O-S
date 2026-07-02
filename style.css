@@ -313,3 +313,198 @@ background:#ff9800;
 color:white;
 
 }
+/* الخلفية */
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+/* صندوق المودال */
+.modal-content{
+    background: #ffffff;
+    width: 480px;
+    max-width: 95%;
+    padding: 28px;
+    border-radius: 18px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: pop 0.25s ease-out;
+    font-family: Arial, sans-serif;
+}
+
+/* animation */
+@keyframes pop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* زر الإغلاق */
+.close{
+    float:right;
+    font-size:26px;
+    cursor:pointer;
+    color:#777;
+    transition:0.2s;
+}
+.close:hover{
+    color:#000;
+    transform: rotate(90deg);
+}
+
+/* العنوان */
+.modal-content h2{
+    margin: 10px 0 20px;
+    font-size: 22px;
+    color:#111;
+    border-left: 4px solid #2196F3;
+    padding-left: 10px;
+}
+
+/* العناصر المالية */
+#invoiceItems{
+    background:#f9fafc;
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
+
+/* النصوص */
+.modal-content p{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    margin:8px 0;
+    color:#444;
+}
+
+/* الخط الفاصل */
+.modal-content hr{
+    border:none;
+    border-top:1px solid #eee;
+    margin:15px 0;
+}
+
+/* التوتال */
+.modal-content h2 span{
+    float:right;
+}
+
+/* select */
+.modal select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    outline:none;
+    margin-top:8px;
+    background:white;
+    transition:0.2s;
+}
+
+.modal select:focus{
+    border-color:#2196F3;
+    box-shadow:0 0 0 3px rgba(33,150,243,0.15);
+}
+
+/* الأزرار */
+.modal button{
+    width:100%;
+    margin-top:10px;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:14px;
+    transition:0.2s;
+}
+
+/* زر الطباعة */
+.modal button:first-of-type{
+    background: linear-gradient(135deg, #607D8B, #455A64);
+    color:white;
+}
+
+.modal button:first-of-type:hover{
+    transform: translateY(-2px);
+}
+
+/* زر الإتمام */
+.modal button:last-of-type{
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color:white;
+}
+
+.modal button:last-of-type:hover{
+    transform: translateY(-2px);
+}
+
+/* تحسين الموبايل */
+@media (max-width:500px){
+    .modal-content{
+        padding:20px;
+        border-radius:14px;
+    }
+}
+
+.invoice-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:15px;
+    font-size:14px;
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;
+}
+
+/* Header */
+.invoice-table thead{
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color:white;
+}
+
+.invoice-table th{
+    padding:12px;
+    text-align:left;
+    font-weight:600;
+    font-size:13px;
+}
+
+/* Rows */
+.invoice-table td{
+    padding:12px;
+    border-bottom:1px solid #f1f1f1;
+    color:#333;
+}
+
+/* Hover effect */
+.invoice-table tbody tr:hover{
+    background:#f8fbff;
+    transition:0.2s;
+}
+
+/* آخر صف */
+.invoice-table tbody tr:last-child td{
+    border-bottom:none;
+}
+
+/* تحسين الأعمدة الرقمية */
+.invoice-table td:nth-child(2),
+.invoice-table td:nth-child(3),
+.invoice-table td:nth-child(4){
+    text-align:center;
+    font-weight:500;
+}
+
+/* Total column highlight */
+.invoice-table td:last-child{
+    font-weight:bold;
+    color:#1976D2;
+}
