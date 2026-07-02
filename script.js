@@ -281,15 +281,15 @@ function applyDiscount(){
     saveCart();
     renderCart();
 }
-window.onload = function(){
-    loadCart();
-};
-function showTab(tab){
-    document.getElementById("posTab").style.display = tab === "pos" ? "block" : "none";
-    document.getElementById("adminTab").style.display = tab === "admin" ? "block" : "none";
 
-    document.querySelectorAll(".tab").forEach(btn => btn.classList.remove("active"));
-    event.target.classList.add("active");
+function showTab(tab, btn) {
+document.getElementById("posTab").style.display =
+    tab === "pos" ? "grid" : "none";
+    document.getElementById("adminTab").style.display =
+        tab === "admin" ? "block" : "none";
+
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
 }
 let products = JSON.parse(localStorage.getItem("products")) || [];
 function addProduct(){
@@ -339,8 +339,9 @@ function renderPOS(){
         `;
     });
 }
-window.onload = function(){
+window.onload = function () {
+    loadCart();
     renderPOS();
     renderAdminProducts();
     updateClock();
-};  
+};
