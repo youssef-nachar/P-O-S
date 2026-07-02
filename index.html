@@ -83,9 +83,9 @@
 
         <h3 id="total">Total : $0</h3>
 
-        <button class="checkout">
-            Checkout
-        </button>
+   <button class="checkout" onclick="openCheckout()">
+    Checkout
+</button>
 <div class="summary">
 
 <p>Subtotal <span id="subtotal">$0</span></p>
@@ -104,7 +104,67 @@
     </aside>
 
 </main>
+<div id="checkoutModal" class="modal">
 
+    <div class="modal-content">
+
+        <span class="close" onclick="closeCheckout()">&times;</span>
+
+        <h2>Invoice</h2>
+<table class="invoice-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+
+    <tbody id="invoiceItems">
+        <!-- JS will inject rows here -->
+    </tbody>
+</table>
+
+        <hr>
+
+        <p>Subtotal : <span id="invoiceSubtotal"></span></p>
+
+        <p>VAT (15%) : <span id="invoiceVat"></span></p>
+
+        <p>Discount : <span id="invoiceDiscount"></span></p>
+
+        <h2>Total : <span id="invoiceTotal"></span></h2>
+
+        <hr>
+
+        <label>Payment Method</label>
+
+        <select id="paymentMethod">
+
+            <option>Cash</option>
+
+            <option>Visa</option>
+
+            <option>Master Card</option>
+
+            <option>Apple Pay</option>
+
+        </select>
+
+        <br><br>
+
+        <button onclick="printInvoice()">
+            Print Invoice
+        </button>
+
+        <button onclick="finishSale()">
+            Complete Sale
+        </button>
+
+    </div>
+
+</div>
 <script src="script.js"></script>
 
 </body>
