@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restaurant POS</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style1.css">
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
 </head>
@@ -19,6 +19,12 @@
             🍽 Restaurant POS
         </div>
         <div class="tabs">
+        <button class="tab" onclick="showTab('stock',this)">
+    📦 Stock
+</button>
+<button class="tab" onclick="showTab('sales',this)">
+📊 Sales
+</button>
 <button class="tab active" onclick="showTab('pos', this)">POS</button>
 <button class="tab" onclick="showTab('admin', this)">Manage Products</button>
         </div>
@@ -108,6 +114,50 @@
         </aside>
 
     </main>
+    
+
+<div id="salesTab" style="display:none">
+
+  <div class="sales-cards">
+    <div class="card-box">
+        <h3>Total Revenue</h3>
+        <p id="totalRevenue">$0</p>
+    </div>
+
+    <div class="card-box">
+        <h3>Total Profit</h3>
+        <p id="totalProfit">$0</p>
+    </div>
+
+    <div class="card-box">
+        <h3>Items Sold</h3>
+        <p id="itemsSold">0</p>
+    </div>
+
+    <div class="card-box">
+        <h3>Orders</h3>
+        <p id="totalOrders">0</p>
+    </div>
+</div>
+
+<h2>📦 Sales Orders</h2>
+
+<table class="orders-table">
+    <thead>
+        <tr>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Profit</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+
+    <tbody id="ordersTable"></tbody>
+</table>
+
+</div>
            <section id="adminTab" class="tab-content" style="display:none;">
     <div class="admin-panel">
 
@@ -121,7 +171,7 @@
                 <label>Product Name</label>
                 <input type="text" id="pName" placeholder="Enter product name">
             </div>
-
+ <input type="number" id="pStock" placeholder="Stock Quantity">
             <div class="input-group">
                 <label>Price</label>
                 <input type="number" id="pPrice" placeholder="$0.00">
@@ -149,6 +199,27 @@
 
     </div>
 </section>
+<div id="stockTab" style="display:none">
+
+    <h2>Inventory Management</h2>
+
+    <table class="stock-table">
+
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody id="stockTable"></tbody>
+
+    </table>
+
+</div>
     <div id="checkoutModal" class="modal">
 
         <div class="modal-content">
@@ -211,7 +282,7 @@
 
     </div>
 
-    <script src="script.js"></script>
+    <script src="script1.js"></script>
 
 </body>
 
