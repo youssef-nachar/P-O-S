@@ -151,24 +151,18 @@ card.dataset.category===category
 
 }
 
-document.getElementById("search").addEventListener("keyup",function(){
+const searchInput = document.getElementById("search");
 
-let value=this.value.toLowerCase();
-
-document.querySelectorAll(".card").forEach(card=>{
-
-card.style.display=
-
-card.dataset.name.toLowerCase().includes(value)
-
-?"block"
-
-:"none";
-
-});
-
-});
-
+if (searchInput) {
+    searchInput.addEventListener("keyup", function(){
+        let value = this.value.toLowerCase();
+        document.querySelectorAll(".card").forEach(card => {
+            card.style.display = card.dataset.name.toLowerCase().includes(value)
+                ? "block"
+                : "none";
+        });
+    });
+}
 function updateClock(){
 
 document.getElementById("clock").innerHTML=
@@ -621,4 +615,166 @@ function renderSalesOrders(){
     document.getElementById("totalRevenue").innerText = "$" + totalRevenue.toFixed(2);
     document.getElementById("totalProfit").innerText = "$" + totalProfit.toFixed(2);
     document.getElementById("itemsSold").innerText = itemsSold;
+}
+// 1. تعديل إضافة المنتج لتشمل الباركود
+function addProduct() {
+    const name = document.getElementById("pName").value;
+    const price = Number(document.getElementById("pPrice").value);
+    const category = document.getElementById("pCategory").value;
+    const barcode = document.getElementById("pBarcode").value.trim(); // حقل الباركود الجديد
+
+    if(!name || !price || !barcode) {
+        alert("يرجى ملء جميع البيانات بما فيها الباركود");
+        return;
+    }
+
+    // التحقق من عدم تكرار الباركود
+    if(products.some(p => p.barcode === barcode)) {
+        alert("هذا الباركود مسجل لمنتج آخر بالفعل!");
+        return;
+    }
+
+    products.push({
+        name,
+        price,
+        category,
+        barcode, // إضافة الباركود هنا
+        stock: Number(document.getElementById("pStock").value) || 0,
+        sold: 0
+    });
+
+    localStorage.setItem("products", JSON.stringify(products));
+
+    // تفريغ المدخلات
+    document.getElementById("pName").value = "";
+    document.getElementById("pPrice").value = "";
+    document.getElementById("pBarcode").value = "";
+
+    renderAdminProducts();
+    renderPOS();
+    renderStock();
+}
+
+// 2. تحديث عرض المنتجات في لوحة التحكم لإظهار الباركود
+function renderAdminProducts() {
+    const div = document.getElementById("adminProducts");
+    div.innerHTML = "";
+
+    products.forEach((p, i) => {
+        div.innerHTML += `
+            <div class="admin-card">
+                <b>${p.name}</b> - $${p.price} (${p.category}) 
+                <br><small>Barcode: <code>${p.barcode || 'N/A'}</code></small>
+                <button onclick="deleteProduct(${i})">Delete</button>
+            </div>
+        `;
+    });
+}
+// 1. تعديل إضافة المنتج لتشمل الباركود
+function addProduct() {
+    const name = document.getElementById("pName").value;
+    const price = Number(document.getElementById("pPrice").value);
+    const category = document.getElementById("pCategory").value;
+    const barcode = document.getElementById("pBarcode").value.trim(); // حقل الباركود الجديد
+
+    if(!name || !price || !barcode) {
+        alert("يرجى ملء جميع البيانات بما فيها الباركود");
+        return;
+    }
+
+    // التحقق من عدم تكرار الباركود
+    if(products.some(p => p.barcode === barcode)) {
+        alert("هذا الباركود مسجل لمنتج آخر بالفعل!");
+        return;
+    }
+
+    products.push({
+        name,
+        price,
+        category,
+        barcode, // إضافة الباركود هنا
+        stock: Number(document.getElementById("pStock").value) || 0,
+        sold: 0
+    });
+
+    localStorage.setItem("products", JSON.stringify(products));
+
+    // تفريغ المدخلات
+    document.getElementById("pName").value = "";
+    document.getElementById("pPrice").value = "";
+    document.getElementById("pBarcode").value = "";
+
+    renderAdminProducts();
+    renderPOS();
+    renderStock();
+}
+
+// 2. تحديث عرض المنتجات في لوحة التحكم لإظهار الباركود
+function renderAdminProducts() {
+    const div = document.getElementById("adminProducts");
+    div.innerHTML = "";
+
+    products.forEach((p, i) => {
+        div.innerHTML += `
+            <div class="admin-card">
+                <b>${p.name}</b> - $${p.price} (${p.category}) 
+                <br><small>Barcode: <code>${p.barcode || 'N/A'}</code></small>
+                <button onclick="deleteProduct(${i})">Delete</button>
+            </div>
+        `;
+    });
+}
+// 1. تعديل إضافة المنتج لتشمل الباركود
+function addProduct() {
+    const name = document.getElementById("pName").value;
+    const price = Number(document.getElementById("pPrice").value);
+    const category = document.getElementById("pCategory").value;
+    const barcode = document.getElementById("pBarcode").value.trim(); // حقل الباركود الجديد
+
+    if(!name || !price || !barcode) {
+        alert("يرجى ملء جميع البيانات بما فيها الباركود");
+        return;
+    }
+
+    // التحقق من عدم تكرار الباركود
+    if(products.some(p => p.barcode === barcode)) {
+        alert("هذا الباركود مسجل لمنتج آخر بالفعل!");
+        return;
+    }
+
+    products.push({
+        name,
+        price,
+        category,
+        barcode, // إضافة الباركود هنا
+        stock: Number(document.getElementById("pStock").value) || 0,
+        sold: 0
+    });
+
+    localStorage.setItem("products", JSON.stringify(products));
+
+    // تفريغ المدخلات
+    document.getElementById("pName").value = "";
+    document.getElementById("pPrice").value = "";
+    document.getElementById("pBarcode").value = "";
+
+    renderAdminProducts();
+    renderPOS();
+    renderStock();
+}
+
+// 2. تحديث عرض المنتجات في لوحة التحكم لإظهار الباركود
+function renderAdminProducts() {
+    const div = document.getElementById("adminProducts");
+    div.innerHTML = "";
+
+    products.forEach((p, i) => {
+        div.innerHTML += `
+            <div class="admin-card">
+                <b>${p.name}</b> - $${p.price} (${p.category}) 
+                <br><small>Barcode: <code>${p.barcode || 'N/A'}</code></small>
+                <button onclick="deleteProduct(${i})">Delete</button>
+            </div>
+        `;
+    });
 }
