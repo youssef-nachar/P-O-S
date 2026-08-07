@@ -1,780 +1,429 @@
-let cart = [];
+// ==========================================
+// 1. Initial State & Data Setup
+// ==========================================
+const defaultProducts = [
+    { name: "Zaatar Manousheh", emoji: "🌿", price: 1.0, cost: 0.3, stock: 200, category: "Manakish" },
+    { name: "Cheese Manousheh", emoji: "🧀", price: 2.5, cost: 1.0, stock: 150, category: "Manakish" },
+    { name: "Lahm Bi Ajeen", emoji: "🥩", price: 3.0, cost: 1.3, stock: 100, category: "Manakish" },
+    { name: "Kishk Manousheh", emoji: "🥖", price: 1.5, cost: 0.5, stock: 100, category: "Manakish" },
+    { name: "Mix Pizza", emoji: "🍕", price: 6.0, cost: 2.5, stock: 50, category: "Pizza" },
+    { name: "Cold Cola", emoji: "🥤", price: 1.0, cost: 0.5, stock: 80, category: "Drinks" }
+];
+
+let products = JSON.parse(localStorage.getItem("bakery_products")) || defaultProducts;
+let cart = JSON.parse(localStorage.getItem("bakery_cart")) || [];
+let salesOrders = JSON.parse(localStorage.getItem("bakery_orders")) || [];
+let expenses = JSON.parse(localStorage.getItem("bakery_expenses")) || [
+    { id: 1, category: "Shop Rent", title: "Monthly Shop Rent", amount: 50, date: new Date().toLocaleDateString() }
+];
+
 let discount = 0;
+let exchangeRate = Number(localStorage.getItem("bakery_rate")) || 89500;
+let currentCategory = "All";
 
-function renderCart(){
-
-const list=document.getElementById("cartItems");
-
-list.innerHTML="";
-
-let subtotal=0;
-
-cart.forEach((item,index)=>{
-
-subtotal+=item.price*item.qty;
-
-list.innerHTML+=`
-
-<li>
-
-<b>${item.name}</b>
-
-<br>
-
-$${item.price}
-
-<div>
-
-<button onclick="changeQty(${index},-1)">-</button>
-
-${item.qty}
-
-<button onclick="changeQty(${index},1)">+</button>
-
-<button onclick="removeItem(${index})">🗑</button>
-
-</div>
-
-</li>
-
-`;
-
-});
-
-const vat=subtotal*0.15;
-
-const total=subtotal+vat-discount;
-
-document.getElementById("subtotal").innerHTML="$"+subtotal.toFixed(2);
-
-document.getElementById("vat").innerHTML="$"+vat.toFixed(2);
-
-document.getElementById("discount").innerHTML="$"+discount.toFixed(2);
-
-document.getElementById("total").innerHTML="$"+total.toFixed(2);
-
+// ==========================================
+// 2. Helper Functions
+// ==========================================
+function formatUSD(amount) {
+    return "$" + Number(amount || 0).toFixed(2);
 }
 
-function changeQty(index, value){
+function formatLBP(usdAmt) {
+    return (Number(usdAmt || 0) * exchangeRate).toLocaleString() + " LBP";
+}
 
-    const item = cart[index];
-
-    if(value == -1){
-
-        let product = products.find(p => p.name === item.name);
-
-        if(product){
-            product.stock++;
-        }
-
-        item.qty--;
-
-        if(item.qty <= 0){
-            cart.splice(index,1);
-        }
-
-    }else{
-
-        let product = products.find(p => p.name === item.name);
-
-        if(!product || product.stock <= 0){
-            alert("Out of Stock");
-            return;
-        }
-
-        product.stock--;
-        item.qty++;
-
+function setExchangeRate() {
+    let rate = prompt("Enter USD to LBP Exchange Rate:", exchangeRate);
+    if (rate && !isNaN(rate)) {
+        exchangeRate = Number(rate);
+        localStorage.setItem("bakery_rate", exchangeRate);
+        document.getElementById("rateBtn").innerText = exchangeRate.toLocaleString() + " LBP";
+        updateAllViews();
     }
-
-    localStorage.setItem("products", JSON.stringify(products));
-
-    saveCart();
-
-    renderCart();
-    renderPOS();
-    renderStock();
-}
-function removeItem(index){
-
-    const item = cart[index];
-
-    let product = products.find(p => p.name === item.name);
-
-    if(product){
-        product.stock += item.qty;
-    }
-
-    cart.splice(index,1);
-
-    localStorage.setItem("products", JSON.stringify(products));
-
-    saveCart();
-
-    renderCart();
-    renderPOS();
-    renderStock();
-}
-function applyDiscount(){
-
-let d=prompt("Discount Amount");
-
-discount=Number(d)||0;
-
-renderCart();
-
 }
 
-function filterCategory(category){
-
-const cards=document.querySelectorAll(".card");
-
-cards.forEach(card=>{
-
-if(category==="All"){
-
-card.style.display="block";
-
-return;
-
-}
-
-card.style.display=
-
-card.dataset.category===category
-
-?"block"
-
-:"none";
-
-});
-
-}
-
-const searchInput = document.getElementById("search");
-
-if (searchInput) {
-    searchInput.addEventListener("keyup", function(){
-        let value = this.value.toLowerCase();
-        document.querySelectorAll(".card").forEach(card => {
-            card.style.display = card.dataset.name.toLowerCase().includes(value)
-                ? "block"
-                : "none";
-        });
-    });
-}
-function updateClock(){
-
-document.getElementById("clock").innerHTML=
-
-new Date().toLocaleTimeString();
-
-}
-
-setInterval(updateClock,1000);
-
-updateClock();
-
-function openCheckout(){
-
-renderInvoice();
-
-document.getElementById("checkoutModal").style.display="flex";
-
-}
-
-function closeCheckout(){
-
-document.getElementById("checkoutModal").style.display="none";
-
-}
-
-function renderInvoice() {
-
-    let subtotal = 0;
-    let rows = "";
-
-    cart.forEach(item => {
-
-        let itemTotal = item.price * item.qty;
-        subtotal += itemTotal;
-
-        rows += `
-        <tr>
-            <td>${item.name}</td>
-            <td>${item.qty}</td>
-            <td>$${item.price.toFixed(2)}</td>
-            <td>$${itemTotal.toFixed(2)}</td>
-        </tr>
-        `;
-
-    });
-
-    document.getElementById("invoiceItems").innerHTML = rows;
-
-    let vat = subtotal * 0.15;
-    let total = subtotal + vat - discount;
-
-    document.getElementById("invoiceSubtotal").innerHTML = "$" + subtotal.toFixed(2);
-    document.getElementById("invoiceVat").innerHTML = "$" + vat.toFixed(2);
-    document.getElementById("invoiceDiscount").innerHTML = "$" + discount.toFixed(2);
-    document.getElementById("invoiceTotal").innerHTML = "$" + total.toFixed(2);
-}
-function printInvoice(){
-
-window.print();
-
-}
-let salesOrders = JSON.parse(localStorage.getItem("salesOrders")) || [];
-
-function finishSale(){
-
-    let items = [];
-    let total = 0;
-    let profit = 0;
-    let itemsSold = 0;
-
-    cart.forEach(item => {
-
-        let product = products.find(p => p.name === item.name);
-
-        if(product){
-
-            let cost = product.cost || (product.price * 0.6);
-
-            items.push({
-                name: item.name,
-                qty: item.qty,
-                price: item.price
-            });
-
-            total += item.qty * item.price;
-            profit += item.qty * (item.price - cost);
-            itemsSold += item.qty;
-        }
-    });
-
-    const order = {
-        id: "SOD-" + Date.now(),
-        date: new Date().toLocaleString(),
-        items: items,
-        total,
-        profit,
-        status: "PAID"
-    };
-
-    salesOrders.unshift(order);
-
-    localStorage.setItem("salesOrders", JSON.stringify(salesOrders));
-
-    cart = [];
-    discount = 0;
-
-    saveCart();
-
-    renderCart();
-    renderPOS();
-    renderStock();
-    renderSales();
-    renderSalesOrders();
-
-    document.getElementById("invoiceItems").innerHTML = "";
-    closeCheckout();
-
-    alert("Order Completed ✔");
-}
-function saveCart(){
-    localStorage.setItem("cart", JSON.stringify(cart));
-    localStorage.setItem("discount", discount);
-}
-function loadCart(){
-    const savedCart = localStorage.getItem("cart");
-    const savedDiscount = localStorage.getItem("discount");
-
-    if(savedCart){
-        cart = JSON.parse(savedCart);
-    }
-
-    if(savedDiscount){
-        discount = Number(savedDiscount);
-    }
-
-    renderCart();
-}
-function addToCart(name, price){
-
-    const product = products.find(p => p.name === name);
-
-    if(!product){
-        return;
-    }
-
-    if(product.stock <= 0){
-        alert("Out Of Stock");
-        return;
-    }
-
-    product.stock--;
-
-    const item = cart.find(i => i.name === name);
-
-    if(item){
-        item.qty++;
-    }else{
-        cart.push({
-            name:name,
-            price:price,
-            qty:1
-        });
-    }
-
-    localStorage.setItem("products", JSON.stringify(products));
-
-    saveCart();
-
-    renderCart();
-    renderPOS();
-    renderStock();
-}
-
-
-function showTab(tab, btn) {
-document.getElementById("posTab").style.display =
-    tab === "pos" ? "grid" : "none";
-    document.getElementById("adminTab").style.display =
-        tab === "admin" ? "block" : "none";
-
+// ==========================================
+// 3. Navigation & Tab Switching
+// ==========================================
+function showTab(tabId, btn) {
+    document.querySelectorAll(".tab-content").forEach(el => el.style.display = "none");
     document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+
+    if (tabId === "pos") document.getElementById("posTab").style.display = "grid";
+    else document.getElementById(tabId + "Tab").style.display = "block";
+
+    if (btn) btn.classList.add("active");
+    updateAllViews();
 }
-let products = JSON.parse(localStorage.getItem("products")) || [];
-function addProduct(){
-    const name = document.getElementById("pName").value;
-    const price = Number(document.getElementById("pPrice").value);
-    const category = document.getElementById("pCategory").value;
 
-    if(!name || !price) return;
-
-    products.push({
-    name,
-    price,
-    category,
-    stock: Number(document.getElementById("pStock").value) || 0,
-    sold: 0
-});
-    localStorage.setItem("products", JSON.stringify(products));
-
-    renderAdminProducts();
+// ==========================================
+// 4. POS & Products Display
+// ==========================================
+function filterCategory(cat) {
+    currentCategory = cat;
     renderPOS();
-    renderStock();
 }
-function renderAdminProducts(){
-    const div = document.getElementById("adminProducts");
-    div.innerHTML = "";
 
-    products.forEach((p, i) => {
-        div.innerHTML += `
-            <div class="admin-card">
-                <b>${p.name}</b> - $${p.price} (${p.category})
-                <button onclick="deleteProduct(${i})">Delete</button>
-            </div>
-        `;
-    });
+function filterProducts() {
+    let query = document.getElementById("search").value.toLowerCase();
+    renderPOS(query);
 }
-function deleteProduct(i){
-    products.splice(i,1);
-    localStorage.setItem("products", JSON.stringify(products));
-    renderAdminProducts();
-}
-function renderPOS(){
+
+function renderPOS(searchQuery = "") {
     const container = document.getElementById("products");
     container.innerHTML = "";
 
-    products.forEach(p=>{
-
-    container.innerHTML += `
-    <div class="card">
-
-        <div class="emoji">🍽</div>
-
-        <h3>${p.name}</h3>
-
-        <p>$${p.price}</p>
-
-        <small>Stock: ${p.stock}</small>
-
-        <button
-            ${p.stock==0 ? "disabled" : ""}
-            onclick="addToCart('${p.name}',${p.price})">
-
-            ${p.stock==0 ? "Out of Stock" : "Add"}
-
-        </button>
-
-    </div>
-    `;
-
-});
-}
-window.onload = function () {
-    loadCart();
-    renderPOS();
-    renderAdminProducts();
-    updateClock();
-    renderStock();
-    renderSalesOrders();
-};
-function showTab(tab, btn){
-
-    document.getElementById("posTab").style.display =
-        tab=="pos" ? "grid" : "none";
-
-    document.getElementById("adminTab").style.display =
-        tab=="admin" ? "block" : "none";
-
-    document.getElementById("stockTab").style.display =
-        tab=="stock" ? "block" : "none";
-
-    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-
-    btn.classList.add("active");
-}
-
-function renderStock(){
-
-    const table = document.getElementById("stockTable");
-
-    table.innerHTML = "";
-
-    products.forEach(product=>{
-
-        let status = "";
-        let color = "";
-
-        if(product.stock == 0){
-
-            status = "Out of Stock";
-            color = "red";
-
-        }else if(product.stock <= 5){
-
-            status = "Low Stock";
-            color = "orange";
-
-        }else{
-
-            status = "In Stock";
-            color = "green";
-
-        }
-
-        table.innerHTML += `
-        <tr>
-
-            <td>${product.name}</td>
-
-            <td>${product.category}</td>
-
-            <td>$${product.price}</td>
-
-            <td>${product.stock}</td>
-
-            <td style="color:${color};font-weight:bold;">
-                ${status}
-            </td>
-
-        </tr>
-        `;
-
-    });
-
-}
-function showTab(tab, btn){
-
-    document.getElementById("posTab").style.display =
-        tab=="pos" ? "grid" : "none";
-
-    document.getElementById("adminTab").style.display =
-        tab=="admin" ? "block" : "none";
-
-    document.getElementById("stockTab").style.display =
-        tab=="stock" ? "block" : "none";
-
-    document.getElementById("salesTab").style.display =
-        tab=="sales" ? "block" : "none";
-
-    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-
-    btn.classList.add("active");
-}
-
-function renderSales(){
-
-    let totalRevenue = 0;
-    let totalProfit = 0;
-    let itemsSold = 0;
-
-    const table = document.getElementById("salesTable");
-    table.innerHTML = "";
-
     products.forEach(p => {
+        let matchesCategory = (currentCategory === "All" || p.category === currentCategory);
+        let matchesSearch = p.name.toLowerCase().includes(searchQuery);
 
-        let sold = p.sold || 0;
-
-        let revenue = sold * p.price;
-        let cost = p.cost || (p.price * 0.6); // افتراضي
-        let profit = sold * (p.price - cost);
-
-        totalRevenue += revenue;
-        totalProfit += profit;
-        itemsSold += sold;
-
-        if(sold > 0){
-
-            table.innerHTML += `
-            <tr>
-                <td>${p.name}</td>
-                <td>${sold}</td>
-                <td>$${revenue.toFixed(2)}</td>
-                <td>$${profit.toFixed(2)}</td>
-            </tr>
+        if (matchesCategory && matchesSearch) {
+            container.innerHTML += `
+                <div class="card" data-category="${p.category}" data-name="${p.name}">
+                    <div class="emoji">${p.emoji || '🥖'}</div>
+                    <h3>${p.name}</h3>
+                    <p>${formatUSD(p.price)}</p>
+                    <button onclick="addToCart('${p.name}')" ${p.stock <= 0 ? 'disabled style="background:#ccc;"' : ''}>
+                        ${p.stock <= 0 ? 'Out of Stock' : 'Add'}
+                    </button>
+                </div>
             `;
         }
     });
-
-    document.getElementById("totalRevenue").innerHTML =
-        "$" + totalRevenue.toFixed(2);
-
-    document.getElementById("totalProfit").innerHTML =
-        "$" + totalProfit.toFixed(2);
-
-    document.getElementById("itemsSold").innerHTML =
-        itemsSold;
-
-    document.getElementById("totalProducts").innerHTML =
-        products.length;
 }
-function showTab(tab, btn){
 
-    document.getElementById("posTab").style.display =
-        tab=="pos" ? "grid" : "none";
+// ==========================================
+// 5. Cart Management
+// ==========================================
+function addToCart(name) {
+    let prod = products.find(p => p.name === name);
+    if (!prod || prod.stock <= 0) return;
 
-    document.getElementById("adminTab").style.display =
-        tab=="admin" ? "block" : "none";
+    prod.stock--;
+    let cartItem = cart.find(i => i.name === name);
 
-    document.getElementById("stockTab").style.display =
-        tab=="stock" ? "block" : "none";
+    if (cartItem) {
+        cartItem.qty++;
+    } else {
+        cart.push({ name: prod.name, price: prod.price, cost: prod.cost, qty: 1 });
+    }
 
-    document.getElementById("salesTab").style.display =
-        tab=="sales" ? "block" : "none";
-
-    document.getElementById("ordersTab").style.display =
-        tab=="orders" ? "block" : "none";
-
-    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-
-    btn.classList.add("active");
+    saveState();
+    updateAllViews();
 }
-function renderSalesOrders(){
 
-    const table = document.getElementById("ordersTable");
+function renderCart() {
+    const cartList = document.getElementById("cartItems");
+    cartList.innerHTML = "";
+    let subtotal = 0;
 
-    table.innerHTML = "";
+    cart.forEach((item, index) => {
+        let itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
 
-    let totalOrders = salesOrders.length;
-    let totalRevenue = 0;
-    let totalProfit = 0;
-    let itemsSold = 0;
+        cartList.innerHTML += `
+            <li>
+                <div style="display:flex; justify-style:space-between; align-items:center;">
+                    <div>
+                        <b>${item.name}</b><br>
+                        <small>${formatUSD(item.price)} × ${item.qty}</small>
+                    </div>
+                    <div>
+                        <button onclick="changeQty(${index}, 1)">+</button>
+                        <button onclick="changeQty(${index}, -1)">-</button>
+                    </div>
+                </div>
+            </li>
+        `;
+    });
 
-    salesOrders.forEach(order => {
+    let finalTotal = subtotal - discount;
+    if (finalTotal < 0) finalTotal = 0;
 
-        totalRevenue += order.total;
-        totalProfit += order.profit;
+    document.getElementById("subtotal").innerText = formatUSD(subtotal);
+    document.getElementById("discount").innerText = formatUSD(discount);
+    document.getElementById("total").innerText = formatUSD(finalTotal);
+    document.getElementById("totalLBP").innerText = formatLBP(finalTotal);
+}
 
-        let itemsText = order.items.map(i =>
-            `${i.name} x${i.qty}`
-        ).join("<br>");
+function changeQty(index, delta) {
+    let item = cart[index];
+    let prod = products.find(p => p.name === item.name);
 
-        order.items.forEach(i=>{
-            itemsSold += i.qty;
+    if (delta === 1) {
+        if (prod.stock <= 0) return alert("Not enough stock!");
+        prod.stock--;
+        item.qty++;
+    } else {
+        prod.stock++;
+        item.qty--;
+        if (item.qty <= 0) cart.splice(index, 1);
+    }
+
+    saveState();
+    updateAllViews();
+}
+
+function applyDiscount() {
+    let d = prompt("Enter Discount Amount ($):", discount);
+    discount = Number(d) || 0;
+    renderCart();
+}
+
+// ==========================================
+// 6. Checkout & Invoice
+// ==========================================
+function openCheckout() {
+    if (cart.length === 0) return alert("Cart is empty!");
+
+    let subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    let total = subtotal - discount;
+
+    const invoiceTable = document.getElementById("invoiceItems");
+    invoiceTable.innerHTML = "";
+
+    cart.forEach(item => {
+        invoiceTable.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${formatUSD(item.price)}</td>
+                <td>${formatUSD(item.price * item.qty)}</td>
+            </tr>
+        `;
+    });
+ document.getElementById("invoiceOrderNo").innerText = "#ORD-" + Date.now().toString().slice(-4); document.getElementById("invoiceDate").innerText = new Date().toLocaleDateString();
+    document.getElementById("invoiceSubtotal").innerText = formatUSD(subtotal);
+    document.getElementById("invoiceDiscount").innerText = formatUSD(discount);
+    document.getElementById("invoiceTotal").innerText = formatUSD(total);
+    document.getElementById("invoiceTotalLBP").innerText = formatLBP(total);
+
+    document.getElementById("checkoutModal").style.display = "flex";
+}
+
+function closeCheckout() {
+    document.getElementById("checkoutModal").style.display = "none";
+}
+
+function finishSale() {
+    let subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    let totalUSD = subtotal - discount;
+    let totalCostUSD = cart.reduce((sum, i) => sum + (i.cost * i.qty), 0);
+
+    const order = {
+        id: "ORD-" + Date.now().toString().slice(-4),
+        date: new Date().toLocaleString(),
+        items: [...cart],
+        total: totalUSD,
+        cost: totalCostUSD
+    };
+
+    salesOrders.unshift(order);
+    cart = [];
+    discount = 0;
+
+    localStorage.setItem("bakery_orders", JSON.stringify(salesOrders));
+    saveState();
+    updateAllViews();
+    closeCheckout();
+    alert("Sale completed successfully!");
+}
+
+// ==========================================
+// 7. Sales, Expenses & Financial Reporting
+// ==========================================
+function addExpense() {
+    let category = document.getElementById("expCategory").value;
+    let title = document.getElementById("expTitle").value.trim();
+    let amount = Number(document.getElementById("expAmount").value);
+
+    if (!title || !amount || amount <= 0) {
+        return alert("Please enter valid expense details.");
+    }
+
+    expenses.unshift({
+        id: Date.now(),
+        category,
+        title,
+        amount,
+        date: new Date().toLocaleDateString()
+    });
+
+    localStorage.setItem("bakery_expenses", JSON.stringify(expenses));
+    document.getElementById("expTitle").value = "";
+    document.getElementById("expAmount").value = "";
+    renderFinancials();
+}
+
+function deleteExpense(id) {
+    expenses = expenses.filter(e => e.id !== id);
+    localStorage.setItem("bakery_expenses", JSON.stringify(expenses));
+    renderFinancials();
+}
+
+function renderFinancials() {
+    // 1. إجمالي المبيعات (Revenue)
+    let totalRevenue = salesOrders.reduce((sum, o) => sum + o.total, 0);
+
+    // 2. تكلفة المواد المباعة فقط (Cost of Goods Sold - COGS)
+    let totalCOGS = salesOrders.reduce((sum, o) => sum + o.cost, 0);
+
+    // 3. مجمل الربح من البضاعة (Gross Profit)
+    let grossProfit = totalRevenue - totalCOGS;
+
+    // 4. المصاريف التشغيلية الثابتة فقط (إيجار، كهرباء...)
+    let totalOperationalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    // 5. صافي الربح الحقيقي (Net Profit)
+    let netProfit = grossProfit - totalOperationalExpenses;
+
+    // تحديث الواجهة (أرقام واضحة ومفصلة)
+    if (document.getElementById("totalRevenue")) 
+        document.getElementById("totalRevenue").innerText = formatUSD(totalRevenue);
+
+    // تعرض فقط المصاريف التشغيلية (مثل الإيجار) بدون تكلفة المواد
+    if (document.getElementById("totalExpenses")) 
+        document.getElementById("totalExpenses").innerText = formatUSD(totalOperationalExpenses);
+
+    // إظهار صافي الربح النهائـي
+    if (document.getElementById("totalProfit")) 
+        document.getElementById("totalProfit").innerText = formatUSD(netProfit);
+
+    // (اختياري) إذا كان لديك عنصر لمجمل الربح Gross Profit في الـ HTML
+    if (document.getElementById("grossProfit")) 
+        document.getElementById("grossProfit").innerText = formatUSD(grossProfit);
+
+    if (document.getElementById("totalOrders")) 
+        document.getElementById("totalOrders").innerText = salesOrders.length;
+
+    // Render Expenses Log
+    const expTbody = document.getElementById("expensesTable");
+    if (expTbody) {
+        expTbody.innerHTML = "";
+        expenses.forEach(e => {
+            expTbody.innerHTML += `
+                <tr>
+                    <td>${e.date}</td>
+                    <td><b>${e.category}</b></td>
+                    <td>${e.title}</td>
+                    <td style="color:#f43f5e; font-weight:bold;">${formatUSD(e.amount)}</td>
+                    <td>${formatLBP(e.amount)}</td>
+                    <td><button onclick="deleteExpense(${e.id})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button></td>
+                </tr>
+            `;
         });
-
-        table.innerHTML += `
-        <tr>
-            <td>${order.id}</td>
-            <td>${order.date}</td>
-            <td>${itemsText}</td>
-            <td style="color:#22c55e">$${order.total.toFixed(2)}</td>
-            <td style="color:#facc15">$${order.profit.toFixed(2)}</td>
-            <td><span style="background:#22c55e;padding:4px 8px;border-radius:6px;font-size:12px">PAID</span></td>
-        </tr>
-        `;
-    });
-
-    document.getElementById("totalOrders").innerText = totalOrders;
-    document.getElementById("totalRevenue").innerText = "$" + totalRevenue.toFixed(2);
-    document.getElementById("totalProfit").innerText = "$" + totalProfit.toFixed(2);
-    document.getElementById("itemsSold").innerText = itemsSold;
-}
-// 1. تعديل إضافة المنتج لتشمل الباركود
-function addProduct() {
-    const name = document.getElementById("pName").value;
-    const price = Number(document.getElementById("pPrice").value);
-    const category = document.getElementById("pCategory").value;
-    const barcode = document.getElementById("pBarcode").value.trim(); // حقل الباركود الجديد
-
-    if(!name || !price || !barcode) {
-        alert("يرجى ملء جميع البيانات بما فيها الباركود");
-        return;
     }
 
-    // التحقق من عدم تكرار الباركود
-    if(products.some(p => p.barcode === barcode)) {
-        alert("هذا الباركود مسجل لمنتج آخر بالفعل!");
-        return;
+    // Render Orders Log
+    const ordersTbody = document.getElementById("ordersTable");
+    if (ordersTbody) {
+        ordersTbody.innerHTML = "";
+        salesOrders.forEach(o => {
+            let itemsStr = o.items.map(i => `${i.name} (${i.qty})`).join(", ");
+            ordersTbody.innerHTML += `
+                <tr>
+                    <td>${o.id}</td>
+                    <td>${o.date}</td>
+                    <td>${itemsStr}</td>
+                    <td style="color:#22c55e; font-weight:bold;">${formatUSD(o.total)}</td>
+                    <td>${formatLBP(o.total)}</td>
+                </tr>
+            `;
+        });
     }
-
-    products.push({
-        name,
-        price,
-        category,
-        barcode, // إضافة الباركود هنا
-        stock: Number(document.getElementById("pStock").value) || 0,
-        sold: 0
-    });
-
-    localStorage.setItem("products", JSON.stringify(products));
-
-    // تفريغ المدخلات
-    document.getElementById("pName").value = "";
-    document.getElementById("pPrice").value = "";
-    document.getElementById("pBarcode").value = "";
-
-    renderAdminProducts();
-    renderPOS();
-    renderStock();
 }
 
-// 2. تحديث عرض المنتجات في لوحة التحكم لإظهار الباركود
+
+// ==========================================
+// 8. Admin & Stock Management
+// ==========================================
 function renderAdminProducts() {
-    const div = document.getElementById("adminProducts");
-    div.innerHTML = "";
+    const container = document.getElementById("adminProducts");
+    container.innerHTML = "";
 
-    products.forEach((p, i) => {
-        div.innerHTML += `
+    products.forEach((p, index) => {
+        container.innerHTML += `
             <div class="admin-card">
-                <b>${p.name}</b> - $${p.price} (${p.category}) 
-                <br><small>Barcode: <code>${p.barcode || 'N/A'}</code></small>
-                <button onclick="deleteProduct(${i})">Delete</button>
+                <div class="info">
+                    <span class="name">${p.emoji || '🥖'} ${p.name}</span>
+                    <span class="category">${p.category} | Cost: ${formatUSD(p.cost)} | Stock: ${p.stock}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span class="price">${formatUSD(p.price)}</span>
+                    <button class="delete-btn" onclick="deleteProduct(${index})">Delete</button>
+                </div>
             </div>
         `;
     });
 }
-// 1. تعديل إضافة المنتج لتشمل الباركود
-function addProduct() {
-    const name = document.getElementById("pName").value;
-    const price = Number(document.getElementById("pPrice").value);
-    const category = document.getElementById("pCategory").value;
-    const barcode = document.getElementById("pBarcode").value.trim(); // حقل الباركود الجديد
 
-    if(!name || !price || !barcode) {
-        alert("يرجى ملء جميع البيانات بما فيها الباركود");
-        return;
-    }
+function renderStockTable() {
+    const tbody = document.getElementById("stockTable");
+    tbody.innerHTML = "";
 
-    // التحقق من عدم تكرار الباركود
-    if(products.some(p => p.barcode === barcode)) {
-        alert("هذا الباركود مسجل لمنتج آخر بالفعل!");
-        return;
-    }
-
-    products.push({
-        name,
-        price,
-        category,
-        barcode, // إضافة الباركود هنا
-        stock: Number(document.getElementById("pStock").value) || 0,
-        sold: 0
-    });
-
-    localStorage.setItem("products", JSON.stringify(products));
-
-    // تفريغ المدخلات
-    document.getElementById("pName").value = "";
-    document.getElementById("pPrice").value = "";
-    document.getElementById("pBarcode").value = "";
-
-    renderAdminProducts();
-    renderPOS();
-    renderStock();
-}
-
-// 2. تحديث عرض المنتجات في لوحة التحكم لإظهار الباركود
-function renderAdminProducts() {
-    const div = document.getElementById("adminProducts");
-    div.innerHTML = "";
-
-    products.forEach((p, i) => {
-        div.innerHTML += `
-            <div class="admin-card">
-                <b>${p.name}</b> - $${p.price} (${p.category}) 
-                <br><small>Barcode: <code>${p.barcode || 'N/A'}</code></small>
-                <button onclick="deleteProduct(${i})">Delete</button>
-            </div>
+    products.forEach(p => {
+        let status = p.stock > 20 ? '<span style="color:#22c55e">In Stock</span>' : '<span style="color:#ef4444">Low Stock</span>';
+        tbody.innerHTML += `
+            <tr>
+                <td><b>${p.name}</b></td>
+                <td>${p.category}</td>
+                <td>${formatUSD(p.price)}</td>
+                <td>${formatUSD(p.cost)}</td>
+                <td>${p.stock}</td>
+                <td>${status}</td>
+            </tr>
         `;
     });
 }
-// 1. تعديل إضافة المنتج لتشمل الباركود
+
 function addProduct() {
-    const name = document.getElementById("pName").value;
-    const price = Number(document.getElementById("pPrice").value);
-    const category = document.getElementById("pCategory").value;
-    const barcode = document.getElementById("pBarcode").value.trim(); // حقل الباركود الجديد
+    let name = document.getElementById("pName").value.trim();
+    let emoji = document.getElementById("pEmoji").value.trim() || "🥖";
+    let price = Number(document.getElementById("pPrice").value);
+    let cost = Number(document.getElementById("pCost").value) || 0;
+    let stock = Number(document.getElementById("pStock").value) || 100;
+    let category = document.getElementById("pCategory").value;
 
-    if(!name || !price || !barcode) {
-        alert("يرجى ملء جميع البيانات بما فيها الباركود");
-        return;
-    }
+    if (!name || !price) return alert("Please enter product name and price!");
 
-    // التحقق من عدم تكرار الباركود
-    if(products.some(p => p.barcode === barcode)) {
-        alert("هذا الباركود مسجل لمنتج آخر بالفعل!");
-        return;
-    }
+    products.push({ name, emoji, price, cost, stock, category });
+    localStorage.setItem("bakery_products", JSON.stringify(products));
 
-    products.push({
-        name,
-        price,
-        category,
-        barcode, // إضافة الباركود هنا
-        stock: Number(document.getElementById("pStock").value) || 0,
-        sold: 0
-    });
-
-    localStorage.setItem("products", JSON.stringify(products));
-
-    // تفريغ المدخلات
     document.getElementById("pName").value = "";
+    document.getElementById("pEmoji").value = "";
     document.getElementById("pPrice").value = "";
-    document.getElementById("pBarcode").value = "";
+    document.getElementById("pCost").value = "";
+    updateAllViews();
+}
 
-    renderAdminProducts();
+function deleteProduct(index) {
+    products.splice(index, 1);
+    localStorage.setItem("bakery_products", JSON.stringify(products));
+    updateAllViews();
+}
+
+// ==========================================
+// 9. Sync & Clock Initialization
+// ==========================================
+function saveState() {
+    localStorage.setItem("bakery_products", JSON.stringify(products));
+    localStorage.setItem("bakery_cart", JSON.stringify(cart));
+}
+
+function updateAllViews() {
     renderPOS();
-    renderStock();
+    renderCart();
+    renderAdminProducts();
+    renderStockTable();
+    renderFinancials();
 }
 
-// 2. تحديث عرض المنتجات في لوحة التحكم لإظهار الباركود
-function renderAdminProducts() {
-    const div = document.getElementById("adminProducts");
-    div.innerHTML = "";
+window.onload = function () {
+    document.getElementById("rateBtn").innerText = exchangeRate.toLocaleString() + " LBP";
+    updateAllViews();
 
-    products.forEach((p, i) => {
-        div.innerHTML += `
-            <div class="admin-card">
-                <b>${p.name}</b> - $${p.price} (${p.category}) 
-                <br><small>Barcode: <code>${p.barcode || 'N/A'}</code></small>
-                <button onclick="deleteProduct(${i})">Delete</button>
-            </div>
-        `;
-    });
-}
+    setInterval(() => {
+        let clockEl = document.getElementById("clock");
+        if (clockEl) clockEl.innerText = new Date().toLocaleTimeString();
+    }, 1000);
+};
