@@ -1,1 +1,135 @@
 
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منيو المخبز - طلب جديد</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #f8fafc; color: #1e293b; padding: 16px; padding-bottom: 180px; }
+        header { text-align: center; padding: 15px 0; border-bottom: 2px dashed #cbd5e1; margin-bottom: 20px; }
+        header h1 { font-size: 24px; color: #0f172a; }
+        .order-info { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .order-info input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 14px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .card { background: #fff; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+        .card .emoji { font-size: 36px; margin-bottom: 6px; }
+        .card h3 { font-size: 15px; margin-bottom: 4px; }
+        .card .price { color: #2563eb; font-weight: bold; font-size: 14px; margin-bottom: 8px; }
+        .card button { background: #10b981; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .tray { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; color: white; padding: 16px; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); }
+        .tray-items { max-height: 80px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; }
+        .tray-item { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .send-btn { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🥖 منيو المخبز الإلكتروني</h1>
+        <p>اختر وجبتك وأرسل الطلب مباشرة إلى الكاشير</p>
+    </header>
+
+    <div class="order-info">
+        <input type="text" id="custTable" placeholder="رقم الطاولة أو اسم الزبون (مثال: طاولة 3)">
+        <input type="text" id="custNote" placeholder="ملاحظات إضافية (مثال: بدون بصل، زيادة جبنة)">
+    </div>
+
+    <div class="grid" id="menuGrid"></div>
+
+    <div class="tray">
+        <div class="tray-items" id="trayList"></div>
+        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
+            <span>الإجمالي:</span>
+            <span id="trayTotal">$0.00</span>
+        </div>
+        <button class="send-btn" onclick="sendOrder()">🚀 إرسال الطلب للكاشير</button>
+    </div>
+
+    <script>
+        const defaultProducts = [
+            { name: "Zaatar Manousheh", emoji: "🌿", price: 1.0 },
+            { name: "Cheese Manousheh", emoji: "🧀", price: 2.5 },
+            { name: "Lahm Bi Ajeen", emoji: "🥩", price: 3.0 },
+            { name: "Mix Pizza", emoji: "🍕", price: 6.0 },
+            { name: "Cold Cola", emoji: "🥤", price: 1.0 }
+        ];
+
+        let products = JSON.parse(localStorage.getItem("bakery_products")) || defaultProducts;
+        let tray = [];
+        const reqChannel = new BroadcastChannel("bakery_requests_channel");
+
+        function renderMenu() {
+            const grid = document.getElementById("menuGrid");
+            grid.innerHTML = "";
+            products.forEach(p => {
+                let safeName = encodeURIComponent(p.name);
+                grid.innerHTML += `
+                    <div class="card">
+                        <div class="emoji">${p.emoji || '🥖'}</div>
+                        <h3>${p.name}</h3>
+                        <div class="price">$${Number(p.price || 0).toFixed(2)}</div>
+                        <button onclick="addToTray('${safeName}')">+ إضافة</button>
+                    </div>`;
+            });
+        }
+
+        function addToTray(encodedName) {
+            let name = decodeURIComponent(encodedName);
+            let prod = products.find(p => p.name === name);
+            
+            if (!prod) return;
+
+            let item = tray.find(i => i.name === name);
+            if (item) {
+                item.qty++;
+            } else {
+                tray.push({ name: prod.name, price: prod.price || 0, cost: prod.cost || 0, qty: 1 });
+            }
+            renderTray();
+        }
+
+        function renderTray() {
+            const list = document.getElementById("trayList");
+            list.innerHTML = "";
+            let total = 0;
+            tray.forEach(item => {
+                total += item.price * item.qty;
+                list.innerHTML += `<div class="tray-item"><span>${item.name} (x${item.qty})</span><span>$${(item.price * item.qty).toFixed(2)}</span></div>`;
+            });
+            document.getElementById("trayTotal").innerText = "$" + total.toFixed(2);
+        }
+
+        function sendOrder() {
+            let table = document.getElementById("custTable").value.trim() || "سفري / غير محدد";
+            let note = document.getElementById("custNote").value.trim();
+
+            if (tray.length === 0) return alert("الرجاء اختيار منتج واحد على الأقل!");
+
+            let requests = JSON.parse(localStorage.getItem("bakery_requests")) || [];
+            let newRequest = {
+                id: "REQ-" + Date.now().toString().slice(-4),
+                time: new Date().toLocaleTimeString(),
+                table: table,
+                note: note,
+                items: [...tray],
+                total: tray.reduce((sum, i) => sum + (i.price * i.qty), 0)
+            };
+
+            requests.unshift(newRequest);
+            localStorage.setItem("bakery_requests", JSON.stringify(requests));
+
+            reqChannel.postMessage({ type: "NEW_REQUEST" });
+
+            tray = [];
+            document.getElementById("custNote").value = "";
+            renderTray();
+            alert("✅ تم إرسال طلبك بنجاح إلى الكاشير!");
+        }
+
+        window.onload = renderMenu;
+    </script>
+</body>
+</html>
