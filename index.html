@@ -938,38 +938,116 @@ main {
         </div>
     </div>
 
+    <!-- ================= FIREBASE MODULE INITIALIZATION ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // ⚠️ ضع هنا مفاتيح مشروتك الخاصة بـ Firebase Console
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // جعل وظائف السحابة متوفرة للـ Global Scope
+        window.db = db;
+        window.fbRef = ref;
+        window.fbOnValue = onValue;
+        window.fbSet = set;
+        window.fbPush = push;
+        window.fbRemove = remove;
+
+        // بدء الربط مع قاعدة البيانات الفورية
+        initFirebaseListeners();
+    </script>
+
+    <!-- ================= POS LOGIC & APPLICATION CODE ================= -->
     <script>
 const defaultProducts = [
-    { name: "Zaatar Manousheh", emoji: "🌿", price: 1.0, cost: 0.3, stock: 200, category: "Manakish" },
-    { name: "Cheese Manousheh", emoji: "🧀", price: 2.5, cost: 1.0, stock: 150, category: "Manakish" },
-    { name: "Lahm Bi Ajeen", emoji: "🥩", price: 3.0, cost: 1.3, stock: 100, category: "Manakish" },
-    { name: "Kishk Manousheh", emoji: "🥖", price: 1.5, cost: 0.5, stock: 100, category: "Manakish" },
-    { name: "Mix Pizza", emoji: "🍕", price: 6.0, cost: 2.5, stock: 50, category: "Pizza" },
-    { name: "Cold Cola", emoji: "🥤", price: 1.0, cost: 0.5, stock: 80, category: "Drinks" }
+    { id: "1", name: "Zaatar Manousheh", emoji: "🌿", price: 1.0, cost: 0.3, stock: 200, category: "Manakish" },
+    { id: "2", name: "Cheese Manousheh", emoji: "🧀", price: 2.5, cost: 1.0, stock: 150, category: "Manakish" },
+    { id: "3", name: "Lahm Bi Ajeen", emoji: "🥩", price: 3.0, cost: 1.3, stock: 100, category: "Manakish" },
+    { id: "4", name: "Kishk Manousheh", emoji: "🥖", price: 1.5, cost: 0.5, stock: 100, category: "Manakish" },
+    { id: "5", name: "Mix Pizza", emoji: "🍕", price: 6.0, cost: 2.5, stock: 50, category: "Pizza" },
+    { id: "6", name: "Cold Cola", emoji: "🥤", price: 1.0, cost: 0.5, stock: 80, category: "Drinks" }
 ];
 
-let products = JSON.parse(localStorage.getItem("bakery_products")) || defaultProducts;
+let products = [];
 let cart = JSON.parse(localStorage.getItem("bakery_cart")) || [];
-let salesOrders = JSON.parse(localStorage.getItem("bakery_orders")) || [];
-let expenses = JSON.parse(localStorage.getItem("bakery_expenses")) || [
-    { id: 1, category: "Shop Rent", title: "Monthly Shop Rent", amount: 50, date: new Date().toLocaleDateString() }
-];
-
-let incomingRequests = JSON.parse(localStorage.getItem("bakery_requests")) || [];
+let salesOrders = [];
+let expenses = [];
+let incomingRequests = [];
 let discount = 0;
 let exchangeRate = Number(localStorage.getItem("bakery_rate")) || 89500;
 let currentCategory = "All";
 
-// ربط الاتصال المباشر بين صفحة المنيو وصفحة الكاشير
-const reqChannel = new BroadcastChannel("bakery_requests_channel");
+function initFirebaseListeners() {
+    if (!window.db) return;
 
-reqChannel.onmessage = (e) => {
-    if (e.data.type === "NEW_REQUEST") {
-        incomingRequests = JSON.parse(localStorage.getItem("bakery_requests")) || [];
-        playBeep();
+    // المزامنة اللحظية للمنتجات
+    window.fbOnValue(window.fbRef(window.db, 'products'), (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            products = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+        } else {
+            // رفع المنتجات الافتراضية إذا كانت السحابة فارغة
+            defaultProducts.forEach(p => {
+                const newRef = window.fbPush(window.fbRef(window.db, 'products'));
+                window.fbSet(newRef, p);
+            });
+        }
+        updateAllViews();
+    });
+
+    // المزامنة اللحظية للطلبات الواردة من الزبائن عبر المنيو
+    window.fbOnValue(window.fbRef(window.db, 'requests'), (snapshot) => {
+        const data = snapshot.val();
+        let prevCount = incomingRequests.length;
+        if (data) {
+            incomingRequests = Object.keys(data).map(k => ({ firebaseKey: k, ...data[k] }));
+        } else {
+            incomingRequests = [];
+        }
+        if (incomingRequests.length > prevCount) {
+            playBeep();
+        }
         renderIncomingRequests();
-    }
-};
+    });
+
+    // المزامنة اللحظية لسجل المبيعات
+    window.fbOnValue(window.fbRef(window.db, 'orders'), (snapshot) => {
+        const data = snapshot.val();
+        salesOrders = data ? Object.keys(data).map(k => ({ firebaseKey: k, ...data[k] })) : [];
+        renderFinancials();
+    });
+
+    // المزامنة اللحظية للمصاريف
+    window.fbOnValue(window.fbRef(window.db, 'expenses'), (snapshot) => {
+        const data = snapshot.val();
+        expenses = data ? Object.keys(data).map(k => ({ firebaseKey: k, ...data[k] })) : [];
+        renderFinancials();
+    });
+
+    // المزامنة اللحظية لسعر الصرف
+    window.fbOnValue(window.fbRef(window.db, 'exchangeRate'), (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            exchangeRate = Number(data);
+            localStorage.setItem("bakery_rate", exchangeRate);
+            let rateBtn = document.getElementById("rateBtn");
+            if (rateBtn) rateBtn.innerText = exchangeRate.toLocaleString() + " LBP";
+            updateAllViews();
+        }
+    });
+}
 
 function playBeep() {
     try {
@@ -990,6 +1068,9 @@ function setExchangeRate() {
     if (rate && !isNaN(rate)) {
         exchangeRate = Number(rate);
         localStorage.setItem("bakery_rate", exchangeRate);
+        if (window.db) {
+            window.fbSet(window.fbRef(window.db, 'exchangeRate'), exchangeRate);
+        }
         document.getElementById("rateBtn").innerText = exchangeRate.toLocaleString() + " LBP";
         updateAllViews();
     }
@@ -1033,10 +1114,17 @@ function renderPOS(searchQuery = "") {
 function addToCart(name) {
     let prod = products.find(p => p.name === name);
     if (!prod || prod.stock <= 0) return;
+    
+    // تحديث المخزون بالفرونت اند وبالسحابة
     prod.stock--;
+    if (window.db && prod.id) {
+        window.fbSet(window.fbRef(window.db, `products/${prod.id}/stock`), prod.stock);
+    }
+
     let cartItem = cart.find(i => i.name === name);
     if (cartItem) cartItem.qty++;
     else cart.push({ name: prod.name, price: prod.price, cost: prod.cost, qty: 1 });
+    
     saveState();
     updateAllViews();
 }
@@ -1073,10 +1161,15 @@ function changeQty(index, delta) {
         prod.stock--;
         item.qty++;
     } else {
-        prod.stock++;
+        if (prod) prod.stock++;
         item.qty--;
         if (item.qty <= 0) cart.splice(index, 1);
     }
+    
+    if (prod && window.db && prod.id) {
+        window.fbSet(window.fbRef(window.db, `products/${prod.id}/stock`), prod.stock);
+    }
+
     saveState();
     updateAllViews();
 }
@@ -1108,16 +1201,21 @@ function closeCheckout() { document.getElementById("checkoutModal").style.displa
 
 function finishSale() {
     let totalUSD = cart.reduce((sum, i) => sum + (i.price * i.qty), 0) - discount;
-    salesOrders.unshift({
+    let newOrder = {
         id: "ORD-" + Date.now().toString().slice(-4),
         date: new Date().toLocaleString(),
         items: [...cart],
         total: Math.max(0, totalUSD),
         cost: cart.reduce((sum, i) => sum + (i.cost * i.qty), 0)
-    });
+    };
+
+    if (window.db) {
+        const newRef = window.fbPush(window.fbRef(window.db, 'orders'));
+        window.fbSet(newRef, newOrder);
+    }
+
     cart = [];
     discount = 0;
-    localStorage.setItem("bakery_orders", JSON.stringify(salesOrders));
     saveState();
     updateAllViews();
     closeCheckout();
@@ -1129,23 +1227,28 @@ function addExpense() {
     let title = document.getElementById("expTitle").value.trim();
     let amount = Number(document.getElementById("expAmount").value);
     if (!title || !amount || amount <= 0) return alert("Please enter valid expense details.");
-    expenses.unshift({ id: Date.now(), category, title, amount, date: new Date().toLocaleDateString() });
-    localStorage.setItem("bakery_expenses", JSON.stringify(expenses));
+    
+    let expObj = { category, title, amount, date: new Date().toLocaleDateString() };
+
+    if (window.db) {
+        const newRef = window.fbPush(window.fbRef(window.db, 'expenses'));
+        window.fbSet(newRef, expObj);
+    }
+
     document.getElementById("expTitle").value = "";
     document.getElementById("expAmount").value = "";
-    renderFinancials();
 }
 
-function deleteExpense(id) {
-    expenses = expenses.filter(e => e.id !== id);
-    localStorage.setItem("bakery_expenses", JSON.stringify(expenses));
-    renderFinancials();
+function deleteExpense(key) {
+    if (window.db && key) {
+        window.fbRemove(window.fbRef(window.db, `expenses/${key}`));
+    }
 }
 
 function renderFinancials() {
-    let totalRevenue = salesOrders.reduce((sum, o) => sum + o.total, 0);
-    let totalCOGS = salesOrders.reduce((sum, o) => sum + (o.cost || 0), 0);
-    let totalOperationalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    let totalRevenue = salesOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+    let totalCOGS = salesOrders.reduce((sum, o) => sum + Number(o.cost || 0), 0);
+    let totalOperationalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
     let netProfit = (totalRevenue - totalCOGS) - totalOperationalExpenses;
 
     if (document.getElementById("totalRevenue")) document.getElementById("totalRevenue").innerText = formatUSD(totalRevenue);
@@ -1157,7 +1260,7 @@ function renderFinancials() {
     if (expTbody) {
         expTbody.innerHTML = "";
         expenses.forEach(e => {
-            expTbody.innerHTML += `<tr><td>${e.date}</td><td><b>${e.category}</b></td><td>${e.title}</td><td style="color:#f43f5e; font-weight:bold;">${formatUSD(e.amount)}</td><td>${formatLBP(e.amount)}</td><td><button onclick="deleteExpense(${e.id})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button></td></tr>`;
+            expTbody.innerHTML += `<tr><td>${e.date}</td><td><b>${e.category}</b></td><td>${e.title}</td><td style="color:#f43f5e; font-weight:bold;">${formatUSD(e.amount)}</td><td>${formatLBP(e.amount)}</td><td><button onclick="deleteExpense('${e.firebaseKey}')" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button></td></tr>`;
         });
     }
 
@@ -1165,7 +1268,7 @@ function renderFinancials() {
     if (ordersTbody) {
         ordersTbody.innerHTML = "";
         salesOrders.forEach(o => {
-            ordersTbody.innerHTML += `<tr><td>${o.id}</td><td>${o.date}</td><td>${o.items.map(i => `${i.name} (${i.qty})`).join(", ")}</td><td style="color:#22c55e; font-weight:bold;">${formatUSD(o.total)}</td><td>${formatLBP(o.total)}</td></tr>`;
+            ordersTbody.innerHTML += `<tr><td>${o.id}</td><td>${o.date}</td><td>${o.items ? o.items.map(i => `${i.name} (${i.qty})`).join(", ") : ''}</td><td style="color:#22c55e; font-weight:bold;">${formatUSD(o.total)}</td><td>${formatLBP(o.total)}</td></tr>`;
         });
     }
 }
@@ -1174,8 +1277,8 @@ function renderAdminProducts() {
     const container = document.getElementById("adminProducts");
     if (!container) return;
     container.innerHTML = "";
-    products.forEach((p, index) => {
-        container.innerHTML += `<div class="admin-card"><div class="info"><span class="name">${p.emoji || '🥖'} ${p.name}</span><span class="category">${p.category} | Cost: ${formatUSD(p.cost)} | Stock: ${p.stock}</span></div><div style="display:flex; align-items:center; gap:15px;"><span class="price">${formatUSD(p.price)}</span><button class="delete-btn" onclick="deleteProduct(${index})">Delete</button></div></div>`;
+    products.forEach((p) => {
+        container.innerHTML += `<div class="admin-card"><div class="info"><span class="name">${p.emoji || '🥖'} ${p.name}</span><span class="category">${p.category} | Cost: ${formatUSD(p.cost)} | Stock: ${p.stock}</span></div><div style="display:flex; align-items:center; gap:15px;"><span class="price">${formatUSD(p.price)}</span><button class="delete-btn" onclick="deleteProduct('${p.id}')">Delete</button></div></div>`;
     });
 }
 
@@ -1197,15 +1300,24 @@ function addProduct() {
     let stock = Number(document.getElementById("pStock").value) || 100;
     let category = document.getElementById("pCategory").value;
     if (!name || !price) return alert("Please enter product name and price!");
-    products.push({ name, emoji, price, cost, stock, category });
-    saveState();
-    updateAllViews();
+    
+    let newProd = { name, emoji, price, cost, stock, category };
+    if (window.db) {
+        const newRef = window.fbPush(window.fbRef(window.db, 'products'));
+        window.fbSet(newRef, newProd);
+    }
+    
+    document.getElementById("pName").value = "";
+    document.getElementById("pEmoji").value = "";
+    document.getElementById("pPrice").value = "";
+    document.getElementById("pCost").value = "";
+    document.getElementById("pStock").value = "";
 }
 
-function deleteProduct(index) {
-    products.splice(index, 1);
-    saveState();
-    updateAllViews();
+function deleteProduct(id) {
+    if (window.db && id) {
+        window.fbRemove(window.fbRef(window.db, `products/${id}`));
+    }
 }
 
 function renderIncomingRequests() {
@@ -1223,47 +1335,51 @@ function renderIncomingRequests() {
         if (bar) bar.style.display = "none";
     }
 
-    incomingRequests.forEach((req, idx) => {
+    incomingRequests.forEach((req) => {
         tbody.innerHTML += `
             <tr>
                 <td>${req.time}</td>
                 <td><b>${req.table}</b></td>
-                <td>${req.items.map(i => `${i.name} (x${i.qty})`).join(", ")}</td>
+                <td>${req.items ? req.items.map(i => `${i.name} (x${i.qty})`).join(", ") : ''}</td>
                 <td style="color:#f59e0b;">${req.note || '-'}</td>
                 <td style="color:#22c55e; font-weight:bold;">${formatUSD(req.total)}</td>
                 <td>
-                    <button onclick="acceptRequest(${idx})" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">قبول للسلة</button>
-                    <button onclick="rejectRequest(${idx})" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">رفض</button>
+                    <button onclick="acceptRequest('${req.firebaseKey}')" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">قبول للسلة</button>
+                    <button onclick="rejectRequest('${req.firebaseKey}')" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">رفض</button>
                 </td>
             </tr>`;
     });
 }
 
-function acceptRequest(index) {
-    let req = incomingRequests[index];
+function acceptRequest(key) {
+    let req = incomingRequests.find(r => r.firebaseKey === key);
+    if (!req) return;
+    
     req.items.forEach(item => {
         let prod = products.find(p => p.name === item.name);
         if (prod && prod.stock >= item.qty) {
             prod.stock -= item.qty;
+            if (window.db && prod.id) {
+                window.fbSet(window.fbRef(window.db, `products/${prod.id}/stock`), prod.stock);
+            }
             let cartItem = cart.find(c => c.name === item.name);
             if (cartItem) cartItem.qty += item.qty;
             else cart.push({ ...item });
         }
     });
-    incomingRequests.splice(index, 1);
-    localStorage.setItem("bakery_requests", JSON.stringify(incomingRequests));
+
+    rejectRequest(key);
     saveState();
     showTab("pos");
 }
 
-function rejectRequest(index) {
-    incomingRequests.splice(index, 1);
-    localStorage.setItem("bakery_requests", JSON.stringify(incomingRequests));
-    renderIncomingRequests();
+function rejectRequest(key) {
+    if (window.db && key) {
+        window.fbRemove(window.fbRef(window.db, `requests/${key}`));
+    }
 }
 
 function saveState() {
-    localStorage.setItem("bakery_products", JSON.stringify(products));
     localStorage.setItem("bakery_cart", JSON.stringify(cart));
 }
 
