@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bakery & Pastry POS</title>
-    <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
 </head>
 <style>
@@ -130,7 +129,7 @@ header input::placeholder {
    ========================================================================== */
 main {
     display: grid;
-    grid-template-columns: 240px 1fr 340px;
+    grid-template-columns: 240px 1fr 360px;
     height: calc(100vh - 70px);
 }
 
@@ -224,7 +223,7 @@ main {
 /* --- Aside Right: Cart --- */
 .cart {
     background: var(--bg-surface);
-    padding: 24px;
+    padding: 20px;
     border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
@@ -232,9 +231,53 @@ main {
 }
 
 .cart h2 {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--text-main);
-    margin-bottom: 20px;
+    margin-bottom: 12px;
+}
+
+/* Multi-Customer Active Bills Navigation Bar */
+.bills-bar-container {
+    margin-bottom: 16px;
+}
+
+.bills-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.bill-tab {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+}
+
+.bill-tab.active {
+    background: var(--primary);
+    color: var(--text-white);
+    border-color: var(--primary);
+}
+
+.bill-tab .close-bill-btn {
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
 }
 
 #cartItems {
@@ -276,14 +319,14 @@ main {
 
 .summary {
     margin-top: auto;
-    padding-top: 20px;
+    padding-top: 16px;
     border-top: 2px dashed var(--border-color);
 }
 
 .summary p, .summary h2 {
     display: flex;
     justify-content: space-between;
-    margin: 8px 0;
+    margin: 6px 0;
 }
 
 .summary h2 {
@@ -293,9 +336,9 @@ main {
 
 .checkout, .summary button:first-of-type {
     width: 100%;
-    margin-top: 12px;
-    padding: 14px;
-    font-size: 16px;
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--text-white);
     border: none;
@@ -511,6 +554,7 @@ main {
     padding: 8px 12px;
     border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 .delete-btn:hover {
@@ -679,7 +723,7 @@ main {
 
     <!-- شريط تنبيه الطلبات الجديدة -->
     <div id="incomingAlertBar">
-        <span><i class="fa-solid fa-bell fa-bounce"></i> وصل طلب جديد من المنيو الإلكتروني!</span>
+        <span><i class="fa-solid fa-bell fa-bounce"></i> وصل طلب جديد من الزبائن!</span>
         <button onclick="showTab('requests')" style="background:#d97706; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">عرض الطلبات</button>
     </div>
 
@@ -688,13 +732,18 @@ main {
         <aside class="categories" id="categoryContainer">
             <h2>Categories</h2>
             <button onclick="filterCategory('All')">All</button>
-            <!-- سيتم توليد التصنيفات ديناميكياً هنا -->
         </aside>
 
         <section class="products" id="products"></section>
 
         <aside class="cart">
-            <h2>Cart</h2>
+            <h2>Active Bills / Cart</h2>
+            
+            <!-- Dynamic Open Bills Bar -->
+            <div class="bills-bar-container">
+                <div class="bills-bar" id="billsBar"></div>
+            </div>
+
             <ul id="cartItems"></ul>
 
             <div class="summary">
@@ -794,6 +843,7 @@ main {
                     <th>Items</th>
                     <th>Total ($)</th>
                     <th>Total (LBP)</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="ordersTable"></tbody>
@@ -874,7 +924,7 @@ main {
                 <p class="store-info" style="text-align: center; color: var(--text-muted);">Main Branch - Order Receipt</p>
                 <div class="invoice-meta" style="display: flex; justify-content: space-between; margin: 15px 0;">
                     <span><strong>Order #:</strong> <span id="invoiceOrderNo">#ORD-1024</span></span>
-                    <span><strong>Date:</strong> <span id="invoiceDate">2026-08-07</span></span>
+                    <span><strong>Date:</strong> <span id="invoiceDate">2026-08-20</span></span>
                 </div>
             </div>
 
@@ -958,38 +1008,34 @@ main {
         }
     </script>
 
-    <!-- ================= POS LOGIC & APPLICATION CODE ================= -->
+    <!-- ================= POS LOGIC & MULTI-CUSTOMER CART CODE ================= -->
     <script>
 let products = [];
-let cart = JSON.parse(localStorage.getItem("bakery_cart")) || [];
 let salesOrders = [];
 let expenses = [];
 let incomingRequests = [];
-let discount = 0;
 let exchangeRate = Number(localStorage.getItem("bakery_rate")) || 89500;
 let currentCategory = "All";
+
+let openBills = {
+    "walkin": { id: "walkin", label: "Walk-in (زبون مباشر)", cart: [], discount: 0, firebaseKeys: [] }
+};
+let activeBillId = "walkin";
 
 function initFirebaseListeners() {
     if (!window.db) return;
 
     window.fbOnValue(window.fbRef(window.db, 'products'), (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-            products = Object.keys(data).map(k => ({ id: k, ...data[k] }));
-        } else {
-            products = [];
-        }
+        products = data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : [];
         updateAllViews();
     });
 
     window.fbOnValue(window.fbRef(window.db, 'requests'), (snapshot) => {
         const data = snapshot.val();
         let prevCount = incomingRequests.length;
-        if (data) {
-            incomingRequests = Object.keys(data).map(k => ({ firebaseKey: k, ...data[k] }));
-        } else {
-            incomingRequests = [];
-        }
+        incomingRequests = data ? Object.keys(data).map(k => ({ firebaseKey: k, ...data[k] })) : [];
+        
         if (incomingRequests.length > prevCount) {
             playBeep();
         }
@@ -1062,10 +1108,7 @@ function showTab(tabId, btn) {
 function renderCategories() {
     const container = document.getElementById("categoryContainer");
     if (!container) return;
-    
-    // استخراج كافة الفئات الفريدة المتاحة في الأغراض المضافة
     const categories = ["All", ...new Set(products.map(p => p.category).filter(Boolean))];
-    
     container.innerHTML = `<h2>Categories</h2>`;
     categories.forEach(cat => {
         container.innerHTML += `<button onclick="filterCategory('${cat}')">${cat}</button>`;
@@ -1081,7 +1124,7 @@ function renderPOS(searchQuery = "") {
     container.innerHTML = "";
     
     if (products.length === 0) {
-        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">No products found. Add products from the Manage Products tab.</p>`;
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">No products found.</p>`;
         return;
     }
 
@@ -1102,6 +1145,31 @@ function renderPOS(searchQuery = "") {
     });
 }
 
+function getActiveBill() {
+    if (!openBills[activeBillId]) {
+        activeBillId = "walkin";
+    }
+    return openBills[activeBillId];
+}
+
+function switchBill(billId) {
+    activeBillId = billId;
+    renderCart();
+}
+
+function closeBillTab(billId, event) {
+    if (event) event.stopPropagation();
+    if (billId === "walkin") {
+        openBills["walkin"].cart = [];
+        openBills["walkin"].discount = 0;
+        openBills["walkin"].firebaseKeys = [];
+    } else {
+        delete openBills[billId];
+        activeBillId = "walkin";
+    }
+    renderCart();
+}
+
 function addToCart(name) {
     let prod = products.find(p => p.name === name);
     if (!prod || prod.stock <= 0) return;
@@ -1111,20 +1179,36 @@ function addToCart(name) {
         window.fbSet(window.fbRef(window.db, `products/${prod.id}/stock`), prod.stock);
     }
 
-    let cartItem = cart.find(i => i.name === name);
+    let activeBill = getActiveBill();
+    let cartItem = activeBill.cart.find(i => i.name === name);
     if (cartItem) cartItem.qty++;
-    else cart.push({ name: prod.name, price: prod.price, cost: prod.cost, qty: 1 });
+    else activeBill.cart.push({ name: prod.name, price: prod.price, cost: prod.cost, qty: 1 });
 
-    saveState();
     updateAllViews();
 }
 
 function renderCart() {
     const cartList = document.getElementById("cartItems");
-    if (!cartList) return;
+    const billsBar = document.getElementById("billsBar");
+    if (!cartList || !billsBar) return;
+
+    billsBar.innerHTML = "";
+    Object.keys(openBills).forEach(bId => {
+        let bill = openBills[bId];
+        let activeClass = bId === activeBillId ? "active" : "";
+        let closeBtn = `<span class="close-bill-btn" onclick="closeBillTab('${bId}', event)">×</span>`;
+        billsBar.innerHTML += `
+            <div class="bill-tab ${activeClass}" onclick="switchBill('${bId}')">
+                <span>${bill.label}</span>
+                ${closeBtn}
+            </div>`;
+    });
+
+    let activeBill = getActiveBill();
     cartList.innerHTML = "";
     let subtotal = 0;
-    cart.forEach((item, index) => {
+
+    activeBill.cart.forEach((item, index) => {
         subtotal += item.price * item.qty;
         cartList.innerHTML += `
             <li>
@@ -1137,16 +1221,19 @@ function renderCart() {
                 </div>
             </li>`;
     });
-    let finalTotal = Math.max(0, subtotal - discount);
+
+    let finalTotal = Math.max(0, subtotal - activeBill.discount);
     document.getElementById("subtotal").innerText = formatUSD(subtotal);
-    document.getElementById("discount").innerText = formatUSD(discount);
+    document.getElementById("discount").innerText = formatUSD(activeBill.discount);
     document.getElementById("total").innerText = formatUSD(finalTotal);
     document.getElementById("totalLBP").innerText = formatLBP(finalTotal);
 }
 
 function changeQty(index, delta) {
-    let item = cart[index];
+    let activeBill = getActiveBill();
+    let item = activeBill.cart[index];
     let prod = products.find(p => p.name === item.name);
+
     if (delta === 1) {
         if (prod && prod.stock <= 0) return alert("Not enough stock!");
         if (prod) prod.stock--;
@@ -1154,35 +1241,39 @@ function changeQty(index, delta) {
     } else {
         if (prod) prod.stock++;
         item.qty--;
-        if (item.qty <= 0) cart.splice(index, 1);
+        if (item.qty <= 0) activeBill.cart.splice(index, 1);
     }
 
     if (prod && window.db && prod.id) {
         window.fbSet(window.fbRef(window.db, `products/${prod.id}/stock`), prod.stock);
     }
 
-    saveState();
     updateAllViews();
 }
 
 function applyDiscount() {
-    discount = Number(prompt("Enter Discount Amount ($):", discount)) || 0;
+    let activeBill = getActiveBill();
+    activeBill.discount = Number(prompt("Enter Discount Amount ($):", activeBill.discount)) || 0;
     renderCart();
 }
 
 function openCheckout() {
-    if (cart.length === 0) return alert("Cart is empty!");
-    let subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    let total = Math.max(0, subtotal - discount);
+    let activeBill = getActiveBill();
+    if (activeBill.cart.length === 0) return alert("Current customer cart is empty!");
+
+    let subtotal = activeBill.cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    let total = Math.max(0, subtotal - activeBill.discount);
     const invoiceTable = document.getElementById("invoiceItems");
     invoiceTable.innerHTML = "";
-    cart.forEach(item => {
+
+    activeBill.cart.forEach(item => {
         invoiceTable.innerHTML += `<tr><td>${item.name}</td><td style="text-align:center;">${item.qty}</td><td style="text-align:right;">${formatUSD(item.price)}</td><td style="text-align:right;">${formatUSD(item.price * item.qty)}</td></tr>`;
     });
-    document.getElementById("invoiceOrderNo").innerText = "#ORD-" + Date.now().toString().slice(-4);
+
+    document.getElementById("invoiceOrderNo").innerText = "#" + (activeBill.label.includes('REQ') ? activeBill.id : "ORD-" + Date.now().toString().slice(-4));
     document.getElementById("invoiceDate").innerText = new Date().toLocaleDateString();
     document.getElementById("invoiceSubtotal").innerText = formatUSD(subtotal);
-    document.getElementById("invoiceDiscount").innerText = formatUSD(discount);
+    document.getElementById("invoiceDiscount").innerText = formatUSD(activeBill.discount);
     document.getElementById("invoiceTotal").innerText = formatUSD(total);
     document.getElementById("invoiceTotalLBP").innerText = formatLBP(total);
     document.getElementById("checkoutModal").style.display = "flex";
@@ -1191,23 +1282,30 @@ function openCheckout() {
 function closeCheckout() { document.getElementById("checkoutModal").style.display = "none"; }
 
 function finishSale() {
-    let totalUSD = cart.reduce((sum, i) => sum + (i.price * i.qty), 0) - discount;
+    let activeBill = getActiveBill();
+    let totalUSD = activeBill.cart.reduce((sum, i) => sum + (i.price * i.qty), 0) - activeBill.discount;
+
     let newOrder = {
         id: "ORD-" + Date.now().toString().slice(-4),
+        customer: activeBill.label,
         date: new Date().toLocaleString(),
-        items: [...cart],
+        items: [...activeBill.cart],
         total: Math.max(0, totalUSD),
-        cost: cart.reduce((sum, i) => sum + (i.cost * i.qty), 0)
+        cost: activeBill.cart.reduce((sum, i) => sum + (i.cost * i.qty), 0)
     };
 
     if (window.db) {
         const newRef = window.fbPush(window.fbRef(window.db, 'orders'));
         window.fbSet(newRef, newOrder);
+
+        if (activeBill.firebaseKeys && activeBill.firebaseKeys.length > 0) {
+            activeBill.firebaseKeys.forEach(k => {
+                window.fbRemove(window.fbRef(window.db, `requests/${k}`));
+            });
+        }
     }
 
-    cart = [];
-    discount = 0;
-    saveState();
+    closeBillTab(activeBillId);
     updateAllViews();
     closeCheckout();
     alert("Sale completed successfully!");
@@ -1236,6 +1334,14 @@ function deleteExpense(key) {
     }
 }
 
+function deleteOrder(key) {
+    if (confirm("Are you sure you want to delete this order?")) {
+        if (window.db && key) {
+            window.fbRemove(window.fbRef(window.db, `orders/${key}`));
+        }
+    }
+}
+
 function renderFinancials() {
     let totalRevenue = salesOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
     let totalCOGS = salesOrders.reduce((sum, o) => sum + Number(o.cost || 0), 0);
@@ -1259,7 +1365,14 @@ function renderFinancials() {
     if (ordersTbody) {
         ordersTbody.innerHTML = "";
         salesOrders.forEach(o => {
-            ordersTbody.innerHTML += `<tr><td>${o.id}</td><td>${o.date}</td><td>${o.items ? o.items.map(i => `${i.name} (${i.qty})`).join(", ") : ''}</td><td style="color:#22c55e; font-weight:bold;">${formatUSD(o.total)}</td><td>${formatLBP(o.total)}</td></tr>`;
+            ordersTbody.innerHTML += `<tr>
+                <td>${o.id}</td>
+                <td>${o.date}</td>
+                <td>${o.items ? o.items.map(i => `${i.name} (${i.qty})`).join(", ") : ''}</td>
+                <td style="color:#22c55e; font-weight:bold;">${formatUSD(o.total)}</td>
+                <td>${formatLBP(o.total)}</td>
+                <td><button onclick="deleteOrder('${o.firebaseKey}')" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button></td>
+            </tr>`;
         });
     }
 }
@@ -1328,6 +1441,49 @@ function deleteProduct(id) {
     }
 }
 
+function getGroupedRequests() {
+    let groupedMap = {};
+
+    incomingRequests.forEach(req => {
+        let key = (req.id || req.sessionId || req.table || "Default").toString().trim();
+
+        if (!groupedMap[key]) {
+            groupedMap[key] = {
+                groupKey: key,
+                keys: [req.firebaseKey],
+                time: req.time,
+                table: req.customerLabel || req.table || key,
+                items: [],
+                notes: req.note ? [req.note] : [],
+                total: 0
+            };
+        } else {
+            groupedMap[key].keys.push(req.firebaseKey);
+            groupedMap[key].time = req.time;
+            if (req.note && !groupedMap[key].notes.includes(req.note)) {
+                groupedMap[key].notes.push(req.note);
+            }
+        }
+
+        if (req.items && Array.isArray(req.items)) {
+            req.items.forEach(item => {
+                let existingItem = groupedMap[key].items.find(i => i.name === item.name);
+                if (existingItem) {
+                    existingItem.qty += item.qty;
+                } else {
+                    groupedMap[key].items.push({ ...item });
+                }
+            });
+        }
+    });
+
+    Object.keys(groupedMap).forEach(k => {
+        groupedMap[k].total = groupedMap[k].items.reduce((sum, i) => sum + (Number(i.price || 0) * i.qty), 0);
+    });
+
+    return Object.values(groupedMap);
+}
+
 function renderIncomingRequests() {
     const tbody = document.getElementById("incomingRequestsTable");
     const badge = document.getElementById("reqBadge");
@@ -1335,60 +1491,78 @@ function renderIncomingRequests() {
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    if (incomingRequests.length > 0) {
-        if (badge) { badge.style.display = "inline"; badge.innerText = incomingRequests.length; }
+    let groupedRequests = getGroupedRequests();
+
+    if (groupedRequests.length > 0) {
+        if (badge) { badge.style.display = "inline"; badge.innerText = groupedRequests.length; }
         if (bar) bar.style.display = "flex";
     } else {
         if (badge) badge.style.display = "none";
         if (bar) bar.style.display = "none";
     }
 
-    incomingRequests.forEach((req) => {
+    groupedRequests.forEach((req) => {
+        let itemsStr = req.items ? req.items.map(i => `${i.name} (x${i.qty})`).join(", ") : '';
+        let notesStr = req.notes.length > 0 ? req.notes.join(" | ") : '-';
+        let keysParam = encodeURIComponent(JSON.stringify(req.keys));
+        let groupParam = encodeURIComponent(JSON.stringify(req));
+
         tbody.innerHTML += `
             <tr>
                 <td>${req.time}</td>
                 <td><b>${req.table}</b></td>
-                <td>${req.items ? req.items.map(i => `${i.name} (x${i.qty})`).join(", ") : ''}</td>
-                <td style="color:#f59e0b;">${req.note || '-'}</td>
+                <td>${itemsStr}</td>
+                <td style="color:#f59e0b;">${notesStr}</td>
                 <td style="color:#22c55e; font-weight:bold;">${formatUSD(req.total)}</td>
                 <td>
-                    <button onclick="acceptRequest('${req.firebaseKey}')" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">قبول للسلة</button>
-                    <button onclick="rejectRequest('${req.firebaseKey}')" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">رفض</button>
+                    <button onclick="acceptGroupedRequest('${groupParam}')" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">قبول للسلة</button>
+                    <button onclick="rejectGroupedRequest('${keysParam}')" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">رفض</button>
                 </td>
             </tr>`;
     });
 }
 
-function acceptRequest(key) {
-    let req = incomingRequests.find(r => r.firebaseKey === key);
-    if (!req) return;
+function acceptGroupedRequest(encodedGroup) {
+    let reqGroup = JSON.parse(decodeURIComponent(encodedGroup));
+    let billId = reqGroup.groupKey;
 
-    req.items.forEach(item => {
+    if (!openBills[billId]) {
+        openBills[billId] = {
+            id: billId,
+            label: reqGroup.table || billId,
+            cart: [],
+            discount: 0,
+            firebaseKeys: reqGroup.keys
+        };
+    } else {
+        openBills[billId].firebaseKeys = [...new Set([...openBills[billId].firebaseKeys, ...reqGroup.keys])];
+    }
+
+    reqGroup.items.forEach(item => {
         let prod = products.find(p => p.name === item.name);
         if (prod && prod.stock >= item.qty) {
             prod.stock -= item.qty;
             if (window.db && prod.id) {
                 window.fbSet(window.fbRef(window.db, `products/${prod.id}/stock`), prod.stock);
             }
-            let cartItem = cart.find(c => c.name === item.name);
-            if (cartItem) cartItem.qty += item.qty;
-            else cart.push({ ...item });
         }
+        let cartItem = openBills[billId].cart.find(c => c.name === item.name);
+        if (cartItem) cartItem.qty += item.qty;
+        else openBills[billId].cart.push({ ...item });
     });
 
-    rejectRequest(key);
-    saveState();
+    activeBillId = billId;
+    updateAllViews();
     showTab("pos");
 }
 
-function rejectRequest(key) {
-    if (window.db && key) {
-        window.fbRemove(window.fbRef(window.db, `requests/${key}`));
+function rejectGroupedRequest(encodedKeys) {
+    let keys = JSON.parse(decodeURIComponent(encodedKeys));
+    if (window.db && Array.isArray(keys)) {
+        keys.forEach(k => {
+            window.fbRemove(window.fbRef(window.db, `requests/${k}`));
+        });
     }
-}
-
-function saveState() {
-    localStorage.setItem("bakery_cart", JSON.stringify(cart));
 }
 
 function updateAllViews() {
