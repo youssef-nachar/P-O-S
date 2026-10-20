@@ -884,7 +884,139 @@ function renderProductTable(){$("productTable").innerHTML=state.products.length?
 function renderStock(){$("stockTable").innerHTML=state.products.length?state.products.map(p=>`<tr><td>${safe(p.emoji||"🥖")} ${safe(p.name)}</td><td>${safe(p.category||"General")}</td><td>${money(p.price)}</td><td>${money(p.cost)}</td><td>${Number(p.stock)||0}</td><td><span class="badge">${Number(p.stock)>10?"In Stock":Number(p.stock)>0?"Low Stock":"Out of Stock"}</span></td></tr>`).join(""):'<tr><td colspan="6" class="empty">No products found.</td></tr>'}
 function renderOrders(){const rev=state.orders.reduce((s,o)=>s+Number(o.total||0),0),cost=state.orders.reduce((s,o)=>s+Number(o.cost||0),0),exp=state.expenses.reduce((s,e)=>s+Number(e.amount||0),0);$("revenue").textContent=money(rev);$("orderCount").textContent=state.orders.length;$("profit").textContent=money(rev-cost-exp);$("ordersTable").innerHTML=state.orders.length?[...state.orders].reverse().map(o=>`<tr><td>${safe(o.id||o.key)}</td><td>${safe(o.date?new Date(o.date).toLocaleString():"—")}</td><td>${(o.items||[]).map(i=>`${safe(i.name)} ×${Number(i.qty)||0}`).join("; ")}</td><td>${money(o.total)}</td><td>${safe(o.paymentMethod||"—")}</td></tr>`).join(""):'<tr><td colspan="5" class="empty">No sales yet.</td></tr>'}
 function renderExpenses(){$("expensesTable").innerHTML=state.expenses.length?[...state.expenses].reverse().map(e=>`<tr><td>${safe(e.date?new Date(e.date).toLocaleDateString("en-US"):"—")}</td><td>${safe(e.category)}</td><td>${safe(e.title)}</td><td>${money(e.amount)}</td><td><button class="danger" data-delexp="${safe(e.key)}">Delete</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">No expenses recorded.</td></tr>';$("expensesTable").querySelectorAll("[data-delexp]").forEach(b=>b.addEventListener("click",()=>deleteExpense(b.dataset.delexp)))}
-function renderRequests(){$("requestCount").textContent=state.requests.length?`(${state.requests.length})`:"";$("requestsTable").innerHTML=state.requests.length?[...state.requests].reverse().map(r=>`<tr><td>${safe(r.customerLabel||r.customer||r.table||"Customer")}</td><td>${safe(r.time||r.date||"—")}</td><td>${Array.isArray(r.items)?r.items.map(i=>`${safe(i.name)} ×${Number(i.qty)||0}`).join("; "):safe(r.items||"—")}</td><td>${safe(r.note||"—")}</td><td>${money((r.items||[]).reduce?.((s,i)=>s+Number(i.price||0)*Number(i.qty||0),0)||r.total||0)}</td><td><button class="success" data-accept="${safe(r.key)}">Processed</button> <button class="danger" data-reject="${safe(r.key)}">Delete</button></td></tr>`).join(""):'<tr><td colspan="6" class="empty">No incoming orders.</td></tr>';$("requestsTable").querySelectorAll("[data-accept],[data-reject]").forEach(b=>b.addEventListener("click",async()=>{try{await dbDelete("requests/"+(b.dataset.accept||b.dataset.reject));toast("Orders updated.")}catch(e){toast(errorText(e),true)}}))}
+
+function renderRequests() {
+  $("requestCount").textContent = state.requests.length
+    ? `(${state.requests.length})`
+    : "";
+
+  $("requestsTable").innerHTML = state.requests.length
+    ? [...state.requests].reverse().map(r => `
+      <tr>
+        <td>${safe(r.customerLabel || r.customer || r.table || "Customer")}</td>
+        <td>${safe(r.time || r.date || "—")}</td>
+        <td>${
+          Array.isArray(r.items)
+            ? r.items.map(i =>
+                `${safe(i.name)} ×${Number(i.qty) || 0}`
+              ).join("; ")
+            : safe(r.items || "—")
+        }</td>
+        <td>${safe(r.note || "—")}</td>
+        <td>${money(
+          Array.isArray(r.items)
+            ? r.items.reduce(
+                (sum, i) =>
+                  sum + Number(i.price || 0) * Number(i.qty || 0),
+                0
+              )
+            : Number(r.total || 0)
+        )}</td>
+        <td>
+          <button class="primary" data-proceed="${safe(r.key)}">
+            Proceed to Cart
+          </button>
+          <button class="danger" data-reject="${safe(r.key)}">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `).join("")
+    : '<tr><td colspan="6" class="empty">No incoming orders.</td></tr>';
+
+  $("requestsTable")
+    .querySelectorAll("[data-proceed]")
+    .forEach(button => {
+      button.addEventListener("click", () => {
+        const request = state.requests.find(
+          r => r.key === button.dataset.proceed
+        );
+
+        if (!request) {
+          toast("Customer order not found.", true);
+          return;
+        }
+
+        if (!Array.isArray(request.items) || !request.items.length) {
+          toast("This order has no valid product list.", true);
+          return;
+        }
+
+        for (const requested of request.items) {
+          const product = state.products.find(p =>
+            p.id === requested.id ||
+            p.id === requested.productId ||
+            p.name === requested.name
+          );
+
+          if (!product) {
+            toast(
+              `Product not found: ${requested.name || "Unknown product"}`,
+              true
+            );
+            return;
+          }
+
+          const qty = Number(requested.qty);
+
+          if (!Number.isInteger(qty) || qty <= 0) {
+            toast(`Invalid quantity for ${product.name}.`, true);
+            return;
+          }
+
+          const existing = state.cart.find(i => i.id === product.id);
+          const alreadyInCart = existing ? existing.qty : 0;
+
+          if (Number(product.stock) < alreadyInCart + qty) {
+            toast(`Not enough stock for ${product.name}.`, true);
+            return;
+          }
+        }
+
+        for (const requested of request.items) {
+          const product = state.products.find(p =>
+            p.id === requested.id ||
+            p.id === requested.productId ||
+            p.name === requested.name
+          );
+
+          const existing = state.cart.find(i => i.id === product.id);
+          const qty = Number(requested.qty);
+
+          if (existing) {
+            existing.qty += qty;
+          } else {
+            state.cart.push({
+              id: product.id,
+              name: product.name,
+              price: Number(product.price) || 0,
+              cost: Number(product.cost) || 0,
+              qty
+            });
+          }
+        }
+
+        renderCart();
+        switchPage("pos");
+        toast("Customer order added to cart.");
+      });
+    });
+
+  $("requestsTable")
+    .querySelectorAll("[data-reject]")
+    .forEach(button => {
+      button.addEventListener("click", async () => {
+        if (!confirm("Delete this customer order?")) return;
+
+        try {
+          await dbDelete("requests/" + button.dataset.reject);
+          toast("Customer order deleted.");
+        } catch (error) {
+          toast(errorText(error), true);
+        }
+      });
+    });
+}
 setInterval(()=>$("clock").textContent=new Date().toLocaleTimeString("en-US"),1000);
 </script>
 </body>
