@@ -1,135 +1,916 @@
+<!doctype html>
+<html lang="en">
 
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منيو المخبز - طلب جديد</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
-    <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f8fafc; color: #1e293b; padding: 16px; padding-bottom: 180px; }
-        header { text-align: center; padding: 15px 0; border-bottom: 2px dashed #cbd5e1; margin-bottom: 20px; }
-        header h1 { font-size: 24px; color: #0f172a; }
-        .order-info { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .order-info input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 14px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-        .card { background: #fff; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
-        .card .emoji { font-size: 36px; margin-bottom: 6px; }
-        .card h3 { font-size: 15px; margin-bottom: 4px; }
-        .card .price { color: #2563eb; font-weight: bold; font-size: 14px; margin-bottom: 8px; }
-        .card button { background: #10b981; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .tray { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; color: white; padding: 16px; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); }
-        .tray-items { max-height: 80px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; }
-        .tray-item { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .send-btn { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ShopPOS</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #fff;
+      --ink: #0f172a;
+      --mut: #64748b;
+      --pri: #2563eb;
+      --pri2: #1d4ed8;
+      --cy: #06b6d4;
+      --dk: #14213d;
+      --grn: #16a34a;
+      --red: #dc2626;
+      --line: #e2e8f0;
+      --r: 14px;
+      --sh: 0 1px 2px #0f172a0d, 0 8px 24px -12px #0f172a26
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.5 Inter, system-ui, "Segoe UI", Tahoma, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 0 0 10px;
+      letter-spacing: -.01em
+    }
+
+    h3 {
+      font-size: 16px
+    }
+
+    a {
+      color: var(--pri);
+      text-decoration: none
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: inherit
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-weight: 600;
+      transition: .15s;
+      white-space: nowrap
+    }
+
+    button:hover:not(:disabled) {
+      filter: brightness(.95);
+      transform: translateY(-1px)
+    }
+
+    button:active:not(:disabled) {
+      transform: none
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      outline: 0;
+      transition: .15s
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--pri);
+      box-shadow: 0 0 0 3px #2563eb22
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mut);
+      margin: 12px 0 5px
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .mut {
+      color: var(--mut)
+    }
+
+    .pri {
+      background: var(--pri);
+      color: #fff
+    }
+
+    .grn {
+      background: var(--grn);
+      color: #fff
+    }
+
+    .red {
+      background: #fee2e2;
+      color: var(--red)
+    }
+
+    .lt {
+      background: #eef2f7;
+      color: var(--dk)
+    }
+
+    .full {
+      width: 100%;
+      margin-top: 10px;
+      padding: 11px
+    }
+
+    /* auth */
+    #auth {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: radial-gradient(900px 500px at 15% 10%, #06b6d433, transparent), radial-gradient(800px 500px at 90% 90%, #2563eb33, transparent), linear-gradient(160deg, #14213d, #1e3a8a)
+    }
+
+    .box {
+      width: min(400px, 100%);
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 30px 60px -20px #0008
+    }
+
+    .box h2 {
+      font-size: 24px
+    }
+
+    /* top bar */
+    .bar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--dk);
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      box-shadow: 0 4px 18px #0f172a33
+    }
+
+    .bar>b {
+      font-size: 17px
+    }
+
+    .nav {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      background: #ffffff12;
+      padding: 4px;
+      border-radius: 12px
+    }
+
+    .nav button {
+      background: 0;
+      color: #cbd5e1;
+      font-size: 13px;
+      padding: 7px 12px
+    }
+
+    .nav button:hover {
+      background: #ffffff1a !important;
+      transform: none
+    }
+
+    .nav button.on {
+      background: var(--pri);
+      color: #fff
+    }
+
+    .bar .lt {
+      background: #ffffff1a;
+      color: #fff
+    }
+
+    #uEmail {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-inline-end: 8px
+    }
+
+    /* layout */
+    .page {
+      padding: 22px;
+      max-width: 1280px;
+      margin: 0 auto
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: var(--sh)
+    }
+
+    .lay {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      gap: 18px;
+      align-items: start
+    }
+
+    .lay aside {
+      position: sticky;
+      top: 78px
+    }
+
+    @media(max-width:900px) {
+      .lay {
+        grid-template-columns: 1fr
+      }
+
+      .lay aside {
+        position: static
+      }
+
+      .page {
+        padding: 14px
+      }
+    }
+
+    /* products */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+      background: #fff;
+      transition: .15s
+    }
+
+    .card:hover {
+      border-color: #93c5fd;
+      box-shadow: 0 10px 24px -14px #2563eb66;
+      transform: translateY(-2px)
+    }
+
+    .card .em {
+      font-size: 36px;
+      line-height: 1.2
+    }
+
+    .card b {
+      display: block;
+      margin: 4px 0 2px
+    }
+
+    .card .full {
+      margin-top: 8px;
+      padding: 8px
+    }
+
+    .cats {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px
+    }
+
+    .cats button {
+      background: #eef2f7;
+      color: var(--dk);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px
+    }
+
+    .cats .on {
+      background: var(--dk);
+      color: #fff
+    }
+
+    /* stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px
+    }
+
+    .stat {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 16px;
+      box-shadow: var(--sh);
+      border-top: 3px solid var(--cy)
+    }
+
+    .stat small {
+      color: var(--mut);
+      font-weight: 600
+    }
+
+    .stat b {
+      display: block;
+      font-size: 23px;
+      margin-top: 6px;
+      letter-spacing: -.02em
+    }
+
+    /* forms */
+    .fg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      align-items: end
+    }
+
+    .fg label {
+      margin-top: 0
+    }
+
+    /* tables */
+    .tw {
+      overflow: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 580px
+    }
+
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--mut);
+      background: #f8fafc;
+      text-align: start;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap
+    }
+
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #eef2f7;
+      vertical-align: middle;
+      text-align: start
+    }
+
+    tbody tr:hover {
+      background: #f8fafc
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0
+    }
+
+    /* cart */
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0
+    }
+
+    .tot {
+      font-size: 21px;
+      font-weight: 800;
+      border-top: 1px dashed var(--line);
+      margin-top: 6px;
+      padding-top: 12px;
+      color: var(--pri)
+    }
+
+    #cart {
+      max-height: 42vh;
+      overflow: auto;
+      margin-bottom: 6px
+    }
+
+    #cart .row {
+      border-bottom: 1px solid #eef2f7
+    }
+
+    .q {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .q button {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 8px;
+      background: #eef2f7;
+      font-size: 16px;
+      line-height: 1
+    }
+
+    .badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 700
+    }
+
+    .err {
+      color: var(--red);
+      font-size: 13px;
+      min-height: 18px;
+      margin-top: 6px
+    }
+
+    /* modal & toast */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: #0f172a99;
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      z-index: 20
+    }
+
+    .modal.open {
+      display: flex
+    }
+
+    .mc {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      width: min(520px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 30px 60px -20px #0008
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      inset-inline-start: 20px;
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      display: none;
+      z-index: 99;
+      box-shadow: var(--sh);
+      max-width: 90vw
+    }
+
+    #cust h1 {
+      font-size: 26px;
+      margin: 6px 0 16px
+    }
+
+    @media(max-width:600px) {
+      .bar {
+        padding: 10px 12px
+      }
+
+      .nav {
+        width: 100%;
+        overflow: auto;
+        flex-wrap: nowrap
+      }
+
+      .stat b {
+        font-size: 19px
+      }
+    }
+
+    @media print {
+
+      .bar,
+      .nav,
+      .fg,
+      button {
+        display: none !important
+      }
+
+      body {
+        background: #fff
+      }
+
+      .panel {
+        box-shadow: none
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-    <header>
-        <h1>🥖 منيو المخبز الإلكتروني</h1>
-        <p>اختر وجبتك وأرسل الطلب مباشرة إلى الكاشير</p>
+  <!-- Login / Sign up -->
+  <section id="auth" class="hidden">
+    <form id="authForm" class="box">
+      <h2 style="margin-top:0">🛍️ ShopPOS</h2>
+      <p class="mut" id="authSub">Sign in to your shop</p>
+      <div id="nameWrap" class="hidden"><label>Shop name</label><input id="shopName" maxlength="60"></div>
+      <label>Email</label><input id="email" type="email" required autocomplete="username">
+      <label>Password</label><input id="pass" type="password" minlength="6" required autocomplete="current-password">
+      <button class="pri full" id="authBtn">Sign in</button>
+      <div class="err" id="authErr"></div>
+      <p class="mut" style="font-size:13px"><a href="#" id="authToggle">Create a new shop account</a></p>
+    </form>
+  </section>
+
+  <!-- Customer menu (opened with ?shop=ID) -->
+  <section id="cust" class="hidden page" style="max-width:700px;margin:auto">
+    <h1 id="cName"></h1>
+    <div class="panel">
+      <div class="grid" id="cGrid"></div>
+    </div>
+    <div class="panel">
+      <h3>Your order</h3>
+      <div id="cCart" class="mut">Nothing selected.</div>
+      <div class="fg" style="margin-top:10px">
+        <div><label>Your name / table</label><input id="cWho" maxlength="60"></div>
+        <div><label>Notes</label><input id="cNote" maxlength="200"></div>
+      </div>
+      <button class="grn full" id="cSend">Send order</button>
+    </div>
+  </section>
+
+  <!-- Owner app -->
+  <div id="app" class="hidden">
+    <header class="bar"><b id="topName"></b>
+      <nav class="nav"><button data-p="pos" class="on">🛒 Sale</button><button data-p="products">📦
+          Products</button><button data-p="orders">📊 Sales</button><button data-p="expenses">💸
+          Expenses</button><button data-p="requests">🔔 Orders <span id="reqN"></span></button><button
+          data-p="settings">⚙️ Settings</button></nav>
+      <span><span id="uEmail" style="font-size:12px"></span> <button class="lt" id="logout">Sign out</button></span>
     </header>
 
-    <div class="order-info">
-        <input type="text" id="custTable" placeholder="رقم الطاولة أو اسم الزبون (مثال: طاولة 3)">
-        <input type="text" id="custNote" placeholder="ملاحظات إضافية (مثال: بدون بصل، زيادة جبنة)">
-    </div>
-
-    <div class="grid" id="menuGrid"></div>
-
-    <div class="tray">
-        <div class="tray-items" id="trayList"></div>
-        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
-            <span>الإجمالي:</span>
-            <span id="trayTotal">$0.00</span>
+    <section id="p-pos" class="page">
+      <div class="lay">
+        <div class="panel">
+          <div id="cats" class="cats"></div><input id="search" placeholder="Search products…"
+            style="margin-bottom:12px">
+          <div id="pGrid" class="grid"></div>
         </div>
-        <button class="send-btn" onclick="sendOrder()">🚀 إرسال الطلب للكاشير</button>
+        <aside class="panel">
+          <h3>Current sale</h3>
+          <div id="cart"></div>
+          <div class="row"><span>Subtotal</span><b id="sub"></b></div>
+          <div class="row"><span>Discount</span><b id="dis"></b></div>
+          <div class="row tot"><span>Total</span><span id="gt"></span></div>
+          <div class="mut" id="gt2"></div>
+          <button class="lt full" id="discBtn">Add discount</button><button class="pri full"
+            id="checkBtn">Checkout</button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="p-products" class="page hidden">
+      <div class="panel">
+        <h3>Add product</h3>
+        <form id="pForm" class="fg">
+          <div><label>Name</label><input id="pName" required maxlength="100"></div>
+          <div><label>Emoji</label><input id="pEmoji" maxlength="8" placeholder="📦"></div>
+          <div><label>Price</label><input id="pPrice" type="number" min=".01" step=".01" required></div>
+          <div><label>Cost</label><input id="pCost" type="number" min="0" step=".01" value="0"></div>
+          <div><label>Stock</label><input id="pStock" type="number" min="0" step="1" value="0"></div>
+          <div><label>Category</label><input id="pCat" maxlength="60"></div>
+          <button class="grn">Add</button>
+        </form>
+      </div>
+      <div class="panel tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Cost</th>
+              <th>Stock</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="p-orders" class="page hidden">
+      <div class="stats" id="stats"></div>
+      <div class="panel">
+        <div class="fg">
+          <div><label>Search</label><input id="fQ" placeholder="Receipt or product"></div>
+          <div><label>Period</label><select id="fP">
+              <option value="all">All time</option>
+              <option value="today">Today</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="month">This month</option>
+            </select></div>
+          <div><label>Payment</label><select id="fPay">
+              <option value="all">All</option>
+              <option>Cash</option>
+              <option>Card</option>
+              <option>Other</option>
+            </select></div>
+          <button class="lt" id="csv">Export CSV</button>
+        </div>
+      </div>
+      <div class="panel tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Receipt</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Discount</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="oTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="p-expenses" class="page hidden">
+      <div class="panel">
+        <h3>Record expense</h3>
+        <form id="xForm" class="fg">
+          <div><label>Category</label><select id="xCat">
+              <option>Rent</option>
+              <option>Utilities</option>
+              <option>Supplies</option>
+              <option>Salaries</option>
+              <option>Maintenance</option>
+              <option>Other</option>
+            </select></div>
+          <div><label>Description</label><input id="xTitle" required maxlength="120"></div>
+          <div><label>Amount</label><input id="xAmt" type="number" min=".01" step=".01" required></div>
+          <button class="grn">Save</button>
+        </form>
+      </div>
+      <div class="panel tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="xTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="p-requests" class="page hidden">
+      <div class="panel tw">
+        <h3>Incoming customer orders</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Time</th>
+              <th>Order</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="p-settings" class="page hidden">
+      <div class="panel" style="max-width:560px">
+        <h3>Shop settings</h3>
+        <div class="fg" style="grid-template-columns:1fr">
+          <div><label>Shop name</label><input id="sName" maxlength="60"></div>
+          <div><label>Currency symbol</label><input id="sSym" maxlength="5"></div>
+          <div><label>Second currency name (optional, e.g. LBP)</label><input id="sCur2" maxlength="8"></div>
+          <div><label>Rate: 1 main unit = how many second-currency units (0 = off)</label><input id="sRate"
+              type="number" min="0" step="any"></div>
+        </div>
+        <button class="pri full" id="sSave">Save settings</button>
+        <h4>Customer menu link</h4><input id="sLink" readonly onclick="this.select()">
+        <p class="mut" style="font-size:12px">Share this link or turn it into a QR code. Customers can browse products
+          and send orders without signing in.</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="mc">
+      <div id="mBody"></div>
+      <div class="row"><button class="lt full" id="mClose">Close</button></div>
     </div>
+  </div>
+  <div id="toast" class="toast"></div>
 
-    <script>
-        const defaultProducts = [
-            { name: "Zaatar Manousheh", emoji: "🌿", price: 1.0 },
-            { name: "Cheese Manousheh", emoji: "🧀", price: 2.5 },
-            { name: "Lahm Bi Ajeen", emoji: "🥩", price: 3.0 },
-            { name: "Mix Pizza", emoji: "🍕", price: 6.0 },
-            { name: "Cold Cola", emoji: "🥤", price: 1.0 }
-        ];
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        let products = JSON.parse(localStorage.getItem("bakery_products")) || defaultProducts;
-        let tray = [];
-        const reqChannel = new BroadcastChannel("bakery_requests_channel");
+    /* >>> Paste YOUR Firebase project config here <<< */
+    const cfg = { apiKey: "AIzaSyAzA0XPVzn7dZYYKbqjoWD4XoH2MEHxq_s", authDomain: "pos-system-b20e2.firebaseapp.com", databaseURL: "https://pos-system-b20e2-default-rtdb.firebaseio.com", projectId: "pos-system-b20e2", appId: "1:709615712934:web:2a06fe3e6aa1630fe69267" };
+    const app = initializeApp(cfg), db = getDatabase(app), auth = getAuth(app), $ = i => document.getElementById(i);
+    const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const S = { set: { name: "My Shop", sym: "$", cur2: "", rate: 0 }, products: [], orders: [], expenses: [], requests: [], cart: [], disc: 0, cat: "All" };
+    let base = "", off = [], uid = "";
+    const m = n => S.set.sym + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const m2 = n => S.set.cur2 && S.set.rate > 0 ? Math.round(n * S.set.rate).toLocaleString("en-US") + " " + esc(S.set.cur2) : "";
+    function toast(t, bad) { const x = $("toast"); x.textContent = t; x.style.background = bad ? "#b91c1c" : "#1d2433"; x.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => x.style.display = "none", 3200) }
+    const err = x => x?.code === "auth/invalid-credential" ? "Incorrect email or password." : x?.code === "auth/email-already-in-use" ? "This email is already registered." : String(x?.code || "").includes("PERMISSION") ? "Access denied by database rules." : x?.message || "Error";
+    const list = v => v ? Object.entries(v).map(([k, o]) => ({ k, ...o })) : [];
+    const watch = (p, cb) => off.push(onValue(ref(db, p), s => cb(s.val()), x => toast(err(x), true)));
+    const modal = h => { $("mBody").innerHTML = h; $("modal").classList.add("open") }; $("mClose").onclick = () => $("modal").classList.remove("open");
 
-        function renderMenu() {
-            const grid = document.getElementById("menuGrid");
-            grid.innerHTML = "";
-            products.forEach(p => {
-                let safeName = encodeURIComponent(p.name);
-                grid.innerHTML += `
-                    <div class="card">
-                        <div class="emoji">${p.emoji || '🥖'}</div>
-                        <h3>${p.name}</h3>
-                        <div class="price">$${Number(p.price || 0).toFixed(2)}</div>
-                        <button onclick="addToTray('${safeName}')">+ إضافة</button>
-                    </div>`;
-            });
+    /* ---------- Customer menu mode ---------- */
+    const shopId = new URLSearchParams(location.search).get("shop");
+    if (shopId) {
+      $("cust").classList.remove("hidden"); const cc = {}; let cp = [], cs = S.set;
+      const draw = () => {
+        $("cName").textContent = "🛍️ " + cs.name;
+        $("cGrid").innerHTML = cp.map(p => `<div class="card"><div class="em">${esc(p.emoji || "📦")}</div><b>${esc(p.name)}</b><div>${cs.sym}${Number(p.price).toFixed(2)}</div>
+      <div class="q" style="justify-content:center;margin-top:6px"><button data-m="${esc(p.k)}">−</button><b>${cc[p.k] || 0}</b><button data-a="${esc(p.k)}" ${Number(p.stock) <= (cc[p.k] || 0) ? "disabled" : ""}>+</button></div></div>`).join("") || "<p class='mut'>No products yet.</p>";
+        $("cGrid").querySelectorAll("[data-a]").forEach(b => b.onclick = () => { cc[b.dataset.a] = (cc[b.dataset.a] || 0) + 1; draw() });
+        $("cGrid").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { cc[b.dataset.m] = Math.max(0, (cc[b.dataset.m] || 0) - 1); draw() });
+        const sel = cp.filter(p => cc[p.k] > 0); $("cCart").innerHTML = sel.length ? sel.map(p => `${esc(p.name)} × ${cc[p.k]}`).join("<br>") + `<h3>${cs.sym}${sel.reduce((s, p) => s + p.price * cc[p.k], 0).toFixed(2)}</h3>` : "Nothing selected."
+      };
+      onValue(ref(db, `shops/${shopId}/settings`), s => { cs = { ...cs, ...(s.val() || {}) }; draw() });
+      onValue(ref(db, `shops/${shopId}/products`), s => { cp = list(s.val()).filter(p => Number(p.stock) > 0); draw() }, () => { });
+      $("cSend").onclick = async () => {
+        const items = cp.filter(p => cc[p.k] > 0).map(p => ({ id: p.k, name: p.name, qty: cc[p.k], price: Number(p.price) }));
+        if (!items.length) return toast("Select at least one product.", true);
+        try {
+          await set(push(ref(db, `shops/${shopId}/requests`)), { customer: $("cWho").value.trim().slice(0, 60) || "Customer", note: $("cNote").value.trim().slice(0, 200), time: new Date().toISOString(), items });
+          for (const k in cc) delete cc[k]; draw(); toast("Order sent. Thank you!")
+        } catch (x) { toast(err(x), true) }
+      };
+    }
+
+    /* ---------- Auth ---------- */
+    let signup = false;
+    $("authToggle").onclick = ev => { ev.preventDefault(); signup = !signup; $("nameWrap").classList.toggle("hidden", !signup); $("authBtn").textContent = signup ? "Create shop" : "Sign in"; $("authSub").textContent = signup ? "Create your own shop account" : "Sign in to your shop"; $("authToggle").textContent = signup ? "I already have an account" : "Create a new shop account" };
+    $("authForm").onsubmit = async ev => {
+      ev.preventDefault(); $("authErr").textContent = ""; $("authBtn").disabled = true;
+      try {
+        const e = $("email").value.trim(), p = $("pass").value;
+        if (signup) { const c = await createUserWithEmailAndPassword(auth, e, p); await set(ref(db, `shops/${c.user.uid}/settings`), { name: $("shopName").value.trim() || "My Shop", sym: "$", cur2: "", rate: 0 }) }
+        else await signInWithEmailAndPassword(auth, e, p)
+      } catch (x) { $("authErr").textContent = err(x) } finally { $("authBtn").disabled = false }
+    };
+    $("logout").onclick = () => signOut(auth);
+    onAuthStateChanged(auth, u => {
+      if (shopId) return; off.forEach(f => f()); off = [];
+      $("auth").classList.toggle("hidden", !!u); $("app").classList.toggle("hidden", !u); if (!u) return;
+      uid = u.uid; base = `shops/${uid}`; $("uEmail").textContent = u.email;
+      watch(base + "/settings", v => { S.set = { ...S.set, ...(v || {}) }; $("topName").textContent = "🛍️ " + S.set.name; $("sName").value = S.set.name; $("sSym").value = S.set.sym; $("sCur2").value = S.set.cur2 || ""; $("sRate").value = S.set.rate || 0; $("sLink").value = location.origin + location.pathname + "?shop=" + uid; all() });
+      watch(base + "/products", v => { S.products = list(v); all() }); watch(base + "/orders", v => { S.orders = list(v); all() });
+      watch(base + "/expenses", v => { S.expenses = list(v); all() }); watch(base + "/requests", v => { S.requests = list(v); rReq() })
+    });
+
+    /* ---------- Navigation & settings ---------- */
+    document.querySelectorAll(".nav button").forEach(b => b.onclick = () => { document.querySelectorAll(".page").forEach(p => p.id.startsWith("p-") && p.classList.add("hidden")); $("p-" + b.dataset.p).classList.remove("hidden"); document.querySelectorAll(".nav button").forEach(x => x.classList.toggle("on", x === b)) });
+    $("sSave").onclick = async () => { try { await set(ref(db, base + "/settings"), { name: $("sName").value.trim() || "My Shop", sym: $("sSym").value.trim() || "$", cur2: $("sCur2").value.trim(), rate: Math.max(0, Number($("sRate").value) || 0) }); toast("Settings saved.") } catch (x) { toast(err(x), true) } };
+    if (!shopId) $("auth").classList.remove("hidden");
+
+    /* ---------- POS ---------- */
+    $("search").oninput = rProducts;
+    function rCats() { const c = ["All", ...new Set(S.products.map(p => p.category).filter(Boolean))]; $("cats").innerHTML = c.map(x => `<button class="${S.cat === x ? "on" : ""}" data-c="${esc(x)}">${esc(x)}</button>`).join(""); $("cats").querySelectorAll("button").forEach(b => b.onclick = () => { S.cat = b.dataset.c; rCats(); rProducts() }) }
+    function rProducts() {
+      const q = $("search").value.toLowerCase(), a = S.products.filter(p => (S.cat === "All" || p.category === S.cat) && String(p.name).toLowerCase().includes(q));
+      $("pGrid").innerHTML = a.map(p => `<div class="card"><div class="em">${esc(p.emoji || "📦")}</div><b>${esc(p.name)}</b><div>${m(p.price)}</div><small class="mut">Stock: ${Number(p.stock) || 0}</small><button class="pri full" data-add="${esc(p.k)}" ${Number(p.stock) > 0 ? "" : "disabled"}>Add</button></div>`).join("") || "<p class='mut'>No products.</p>";
+      $("pGrid").querySelectorAll("[data-add]").forEach(b => b.onclick = () => add(b.dataset.add))
+    }
+    function add(id) { const p = S.products.find(x => x.k === id); if (!p) return; const i = S.cart.find(x => x.id === id); if ((i ? i.qty : 0) + 1 > Number(p.stock)) return toast("Not enough stock.", true); i ? i.qty++ : S.cart.push({ id, name: p.name, price: Number(p.price), cost: Number(p.cost) || 0, qty: 1 }); rCart() }
+    const totals = () => { const s = S.cart.reduce((a, i) => a + i.price * i.qty, 0); return { s, t: Math.max(0, s - S.disc) } };
+    function rCart() {
+      const { s, t } = totals(); $("cart").innerHTML = S.cart.map(i => `<div class="row"><div><b>${esc(i.name)}</b><div class="mut">${m(i.price)} × ${i.qty}</div></div><div class="q"><button data-d="${esc(i.id)}">−</button><b>${i.qty}</b><button data-u="${esc(i.id)}">+</button></div></div>`).join("") || "<p class='mut'>Cart is empty.</p>";
+      $("cart").querySelectorAll("[data-d]").forEach(b => b.onclick = () => { const i = S.cart.find(x => x.id === b.dataset.d); if (--i.qty <= 0) S.cart = S.cart.filter(x => x !== i); rCart() });
+      $("cart").querySelectorAll("[data-u]").forEach(b => b.onclick = () => add(b.dataset.u));
+      $("sub").textContent = m(s); $("dis").textContent = m(S.disc); $("gt").textContent = m(t); $("gt2").innerHTML = m2(t)
+    }
+    $("discBtn").onclick = () => { const v = Number(prompt("Discount amount:", S.disc)); if (!Number.isFinite(v) || v < 0) return; S.disc = Math.min(v, totals().s); rCart() };
+    $("checkBtn").onclick = () => {
+      if (!S.cart.length) return toast("Cart is empty.", true); const { t } = totals(); modal(`<h2>Confirm sale</h2><h1>${m(t)}</h1><p class="mut">${m2(t)}</p><label>Payment</label><select id="pay"><option>Cash</option><option>Card</option><option>Other</option></select><button class="grn full" id="ok">Confirm sale</button>`);
+      $("ok").onclick = async () => {
+        $("ok").disabled = true; try {
+          const { s, t } = totals(), u = {}; for (const i of S.cart) { const p = S.products.find(x => x.k === i.id); if (!p || Number(p.stock) < i.qty) throw Error("Insufficient stock: " + i.name); u[`${base}/products/${p.k}/stock`] = Number(p.stock) - i.qty }
+          const k = push(ref(db, base + "/orders")).key; u[`${base}/orders/${k}`] = { id: "R-" + Date.now().toString().slice(-6), date: new Date().toISOString(), items: S.cart.map(i => ({ ...i })), subtotal: s, discount: S.disc, total: t, cost: S.cart.reduce((a, i) => a + i.cost * i.qty, 0), paymentMethod: $("pay").value };
+          await update(ref(db), u); S.cart = []; S.disc = 0; rCart(); $("modal").classList.remove("open"); toast("Sale recorded.")
+        } catch (x) { toast(err(x), true); $("ok").disabled = false }
+      }
+    };
+
+    /* ---------- Products ---------- */
+    $("pForm").onsubmit = async ev => {
+      ev.preventDefault(); const n = $("pName").value.trim(), pr = Number($("pPrice").value), st = Number($("pStock").value); if (!n || !(pr > 0) || !Number.isInteger(st) || st < 0) return toast("Check product details.", true);
+      try { await set(push(ref(db, base + "/products")), { name: n, price: pr, cost: Number($("pCost").value) || 0, stock: st, category: $("pCat").value.trim() || "General", emoji: $("pEmoji").value.trim() || "📦" }); ev.target.reset(); $("pStock").value = 0; $("pCost").value = 0; toast("Product added.") } catch (x) { toast(err(x), true) }
+    };
+    function rPTable() {
+      $("pTable").innerHTML = S.products.map(p => `<tr><td>${esc(p.emoji || "📦")} ${esc(p.name)}</td><td>${esc(p.category)}</td><td>${m(p.price)}</td><td>${m(p.cost)}</td><td>${Number(p.stock) || 0} <button class="lt" data-st="${esc(p.k)}">Edit</button></td><td><button class="red" data-del="${esc(p.k)}">Delete</button></td></tr>`).join("") || '<tr><td colspan="6" class="mut">No products yet.</td></tr>';
+      $("pTable").querySelectorAll("[data-st]").forEach(b => b.onclick = async () => { const v = prompt("New stock quantity:"); if (v === null) return; const n = Number(v); if (!Number.isInteger(n) || n < 0) return toast("Invalid quantity.", true); try { await set(ref(db, `${base}/products/${b.dataset.st}/stock`), n) } catch (x) { toast(err(x), true) } });
+      $("pTable").querySelectorAll("[data-del]").forEach(b => b.onclick = async () => { if (!confirm("Delete this product?")) return; try { await remove(ref(db, `${base}/products/${b.dataset.del}`)); S.cart = S.cart.filter(i => i.id !== b.dataset.del); rCart() } catch (x) { toast(err(x), true) } })
+    }
+
+    /* ---------- Sales ---------- */
+    const dt = v => { const d = new Date(v); return isNaN(d) ? null : d };
+    function bounds() { const p = $("fP").value, n = new Date(), s = new Date(n.getFullYear(), n.getMonth(), n.getDate()); let f = null; if (p === "today") f = s; else if (p === "7" || p === "30") { f = new Date(s); f.setDate(f.getDate() - Number(p) + 1) } else if (p === "month") f = new Date(n.getFullYear(), n.getMonth(), 1); return f }
+    let shown = [];
+    function rOrders() {
+      const q = $("fQ").value.trim().toLowerCase(), pay = $("fPay").value, f = bounds();
+      shown = S.orders.filter(o => { const d = dt(o.date); return (pay === "all" || o.paymentMethod === pay) && (!f || (d && d >= f)) && (!q || [o.id, ...(o.items || []).map(i => i.name)].join(" ").toLowerCase().includes(q)) }).sort((a, b) => (dt(b.date) || 0) - (dt(a.date) || 0));
+      const rev = shown.reduce((s, o) => s + Number(o.total || 0), 0), cost = shown.reduce((s, o) => s + Number(o.cost || 0), 0), ex = S.expenses.filter(x => { const d = dt(x.date); return !f || (d && d >= f) }).reduce((s, x) => s + Number(x.amount || 0), 0), pr = rev - cost - ex;
+      const st = [["Net sales", m(rev)], ["Receipts", shown.length], ["Product cost", m(cost)], ["Expenses", m(ex)], ["Estimated profit", `<span style="color:${pr >= 0 ? "var(--grn)" : "var(--red)"}">${m(pr)}</span>`], ["Average receipt", m(shown.length ? rev / shown.length : 0)]];
+      $("stats").innerHTML = st.map(([a, b]) => `<div class="stat"><small>${a}</small><b>${b}</b></div>`).join("");
+      $("oTable").innerHTML = shown.map(o => { const it = o.items || [], d = dt(o.date); return `<tr><td><b>${esc(o.id || o.k)}</b></td><td>${d ? esc(d.toLocaleString()) : "—"}</td><td>${it.map(i => esc(i.name) + " ×" + (Number(i.qty) || 0)).join(", ")}</td><td>${m(o.discount)}</td><td><b>${m(o.total)}</b></td><td><span class="badge">${esc(o.paymentMethod || "?")}</span></td><td><button class="lt" data-r="${esc(o.k)}">Details</button></td></tr>` }).join("") || '<tr><td colspan="7" class="mut">No sales match.</td></tr>';
+      $("oTable").querySelectorAll("[data-r]").forEach(b => b.onclick = () => { const o = S.orders.find(x => x.k === b.dataset.r), it = o.items || []; modal(`<h3>Receipt ${esc(o.id || o.k)}</h3><p class="mut">${esc(dt(o.date)?.toLocaleString() || "")} · ${esc(o.paymentMethod || "")}</p>${it.map(i => `<div class="row"><span>${esc(i.name)} × ${Number(i.qty) || 0}</span><b>${m(i.price * i.qty)}</b></div>`).join("")}<div class="row"><span>Discount</span><b>− ${m(o.discount)}</b></div><div class="row tot"><span>Total</span><span>${m(o.total)}</span></div><div class="mut">${m2(Number(o.total))}</div>`) })
+    }
+    ["fQ", "fP", "fPay"].forEach(i => $(i).addEventListener(i === "fQ" ? "input" : "change", rOrders));
+    $("csv").onclick = () => {
+      const r = [["Receipt", "Date", "Items", "Subtotal", "Discount", "Total", "Cost", "Payment"], ...shown.map(o => [o.id || o.k, o.date, (o.items || []).map(i => i.name + " x" + i.qty).join("; "), o.subtotal, o.discount, o.total, o.cost, o.paymentMethod])];
+      const c = r.map(a => a.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n"), a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\uFEFF" + c], { type: "text/csv" })); a.download = "sales.csv"; a.click()
+    };
+
+    /* ---------- Expenses ---------- */
+    $("xForm").onsubmit = async ev => {
+      ev.preventDefault(); const a = Number($("xAmt").value), t = $("xTitle").value.trim(); if (!t || !(a > 0)) return toast("Check the details.", true);
+      try { await set(push(ref(db, base + "/expenses")), { category: $("xCat").value, title: t, amount: a, date: new Date().toISOString() }); ev.target.reset(); toast("Expense saved.") } catch (x) { toast(err(x), true) }
+    };
+    function rExp() {
+      $("xTable").innerHTML = [...S.expenses].sort((a, b) => (dt(b.date) || 0) - (dt(a.date) || 0)).map(x => `<tr><td>${esc(dt(x.date)?.toLocaleDateString() || "—")}</td><td>${esc(x.category)}</td><td>${esc(x.title)}</td><td>${m(x.amount)}</td><td><button class="red" data-x="${esc(x.k)}">Delete</button></td></tr>`).join("") || '<tr><td colspan="5" class="mut">No expenses.</td></tr>';
+      $("xTable").querySelectorAll("[data-x]").forEach(b => b.onclick = async () => { if (confirm("Delete this expense?")) try { await remove(ref(db, `${base}/expenses/${b.dataset.x}`)) } catch (x) { toast(err(x), true) } })
+    }
+
+    /* ---------- Customer orders ---------- */
+    function rReq() {
+      $("reqN").textContent = S.requests.length ? `(${S.requests.length})` : "";
+      $("rTable").innerHTML = [...S.requests].reverse().map(r => `<tr><td>${esc(r.customer)}</td><td>${esc(dt(r.time)?.toLocaleString() || "—")}</td><td>${(r.items || []).map(i => esc(i.name) + " ×" + (Number(i.qty) || 0)).join("; ")}</td><td>${esc(r.note || "—")}</td><td><button class="pri" data-go="${esc(r.k)}">To cart</button> <button class="red" data-no="${esc(r.k)}">Delete</button></td></tr>`).join("") || '<tr><td colspan="5" class="mut">No incoming orders.</td></tr>';
+      $("rTable").querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
+        const r = S.requests.find(x => x.k === b.dataset.go);
+        for (const it of r.items || []) {
+          const p = S.products.find(x => x.k === it.id), q = Number(it.qty); if (!p) return toast("Product no longer exists: " + it.name, true); if (!Number.isInteger(q) || q <= 0 || q > 1000) return toast("Invalid quantity.", true);
+          const c = S.cart.find(x => x.id === p.k); if ((c ? c.qty : 0) + q > Number(p.stock)) return toast("Not enough stock: " + p.name, true)
         }
+        for (const it of r.items) { const p = S.products.find(x => x.k === it.id), c = S.cart.find(x => x.id === p.k); c ? c.qty += Number(it.qty) : S.cart.push({ id: p.k, name: p.name, price: Number(p.price), cost: Number(p.cost) || 0, qty: Number(it.qty) }) }
+        rCart(); document.querySelector('[data-p="pos"]').click(); toast("Order added to cart (current prices applied).")
+      });
+      $("rTable").querySelectorAll("[data-no]").forEach(b => b.onclick = async () => { if (confirm("Delete this order?")) try { await remove(ref(db, `${base}/requests/${b.dataset.no}`)) } catch (x) { toast(err(x), true) } })
+    }
 
-        function addToTray(encodedName) {
-            let name = decodeURIComponent(encodedName);
-            let prod = products.find(p => p.name === name);
-            
-            if (!prod) return;
-
-            let item = tray.find(i => i.name === name);
-            if (item) {
-                item.qty++;
-            } else {
-                tray.push({ name: prod.name, price: prod.price || 0, cost: prod.cost || 0, qty: 1 });
-            }
-            renderTray();
-        }
-
-        function renderTray() {
-            const list = document.getElementById("trayList");
-            list.innerHTML = "";
-            let total = 0;
-            tray.forEach(item => {
-                total += item.price * item.qty;
-                list.innerHTML += `<div class="tray-item"><span>${item.name} (x${item.qty})</span><span>$${(item.price * item.qty).toFixed(2)}</span></div>`;
-            });
-            document.getElementById("trayTotal").innerText = "$" + total.toFixed(2);
-        }
-
-        function sendOrder() {
-            let table = document.getElementById("custTable").value.trim() || "سفري / غير محدد";
-            let note = document.getElementById("custNote").value.trim();
-
-            if (tray.length === 0) return alert("الرجاء اختيار منتج واحد على الأقل!");
-
-            let requests = JSON.parse(localStorage.getItem("bakery_requests")) || [];
-            let newRequest = {
-                id: "REQ-" + Date.now().toString().slice(-4),
-                time: new Date().toLocaleTimeString(),
-                table: table,
-                note: note,
-                items: [...tray],
-                total: tray.reduce((sum, i) => sum + (i.price * i.qty), 0)
-            };
-
-            requests.unshift(newRequest);
-            localStorage.setItem("bakery_requests", JSON.stringify(requests));
-
-            reqChannel.postMessage({ type: "NEW_REQUEST" });
-
-            tray = [];
-            document.getElementById("custNote").value = "";
-            renderTray();
-            alert("✅ تم إرسال طلبك بنجاح إلى الكاشير!");
-        }
-
-        window.onload = renderMenu;
-    </script>
+    function all() { rCats(); rProducts(); rCart(); rPTable(); rOrders(); rExp(); rReq() }
+  </script>
 </body>
+
 </html>
